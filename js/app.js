@@ -393,6 +393,21 @@
   }
   sizeCanvas();
 
+  // En el celular, achica el tablero para que tablero y botones quepan en la pantalla sin hacer scroll.
+  function fitStage() {
+    if ($("screen-play").hidden) return;
+    canvas.style.width = "";
+    const pads = document.querySelector(".touch-controls");
+    const padsH = getComputedStyle(pads).display === "none" ? 0 : pads.offsetHeight + 10;
+    const top = canvas.getBoundingClientRect().top + window.scrollY;
+    const avail = window.innerHeight - top - padsH - 12;
+    const full = canvas.parentElement.clientWidth;
+    const w = Math.max(230, Math.min(full, avail * W / H));
+    if (w < full - 1) canvas.style.width = Math.floor(w) + "px";
+  }
+  window.addEventListener("resize", fitStage);
+  if (window.ResizeObserver) new ResizeObserver(() => fitStage()).observe($("prompt"));
+
   let game = null, levelIdx = 0, running = false, paused = false, last = 0;
   let explainCb = null, toastTimer = null, explainReadyAt = 0;
   const EXPLAIN_LOCK_MS = 1200;
@@ -487,6 +502,7 @@
     $("intro").hidden = false;
     paused = true;
     show("play");
+    fitStage();
     if (!running) { running = true; last = performance.now(); requestAnimationFrame(loop); }
     setTimeout(() => $("btn-start").focus({ preventScroll: true }), 50);
   }
