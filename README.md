@@ -89,6 +89,8 @@ js/cloud.js            cuentas en la nube (Firebase)
 js/firebase-config.js  configuración pública del proyecto de Firebase
 js/sound.js            efectos de sonido sintetizados
 js/bg.js               duelos animados del menú de inicio
+js/egg.js              animación sorpresa del título
+js/audio-test.js       prueba de sonido (se abre con cpparcade.cl/#audio)
 firestore.rules        reglas de seguridad de la base de datos
 ```
 
