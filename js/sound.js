@@ -44,7 +44,24 @@
     } catch (e) { htmlUnlocked = false; }
   }
 
+  // Lo que muestra el iPhone en el recuadro de audio de la pantalla bloqueada: nombre e ícono cuadrado
+  // de borde a borde (si no, usa el ícono con esquinas transparentes y las rellena de blanco).
+  function setMediaInfo() {
+    try {
+      if (!("mediaSession" in navigator) || typeof MediaMetadata === "undefined") return;
+      const img = f => new URL("img/" + f, location.href).href;
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: "C++ Arcade", artist: "cpparcade.cl",
+        artwork: [
+          { src: img("icon-512.png?v=3"), sizes: "512x512", type: "image/png" },
+          { src: img("apple-touch-icon.png?v=3"), sizes: "180x180", type: "image/png" }
+        ]
+      });
+    } catch (e) { /* no soportado */ }
+  }
+
   function create() {
+    setMediaInfo();
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return false;
     if (TOUCH) { try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { /* no soportado */ } }
