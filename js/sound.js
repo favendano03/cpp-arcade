@@ -134,22 +134,15 @@
 
   const N = { C5: 523.25, D5: 587.33, E5: 659.25, G5: 783.99, A5: 880, C6: 1046.5, E6: 1318.5, G4: 392, E4: 329.63, C4: 261.63 };
 
-  // Sonido del monito que baila (sorpresa de la C): alguien programando en un teclado mecánico,
-  // con pitidos cortos de terminal. Cada pulso trae 2 o 3 teclas, con un ritmo fijo para que no suene al azar.
-  const KEYS = [[0, 0.13, 0.27], [0.06, 0.22], [0, 0.1, 0.19, 0.31], [0.08, 0.24]];
-  const BEEPS = [1320, 0, 990, 0, 1320, 1760, 0, 0, 1180, 0, 990, 1320];
-
   const SOUNDS = {
-    // Un pulso del baile: teclas y, a veces, un pitido de terminal.
-    dance(b) {
-      const n = b || 0;
-      KEYS[n % KEYS.length].forEach((at, k) => {
-        noise(0.025, { filter: "bandpass", freq: 3200 + ((n + k) % 3) * 500, vol: 0.9, at });
-        tone(180, 0.02, { type: "triangle", vol: 0.22, at });
-      });
-      const f = BEEPS[n % BEEPS.length];
-      if (f) tone(f, 0.06, { type: "sine", vol: 0.2, at: 0.36 });
+    // El monito escribiendo el cartel: una tecla mecánica por letra (la barra espaciadora suena más grave)
+    // y un pitido de terminal al terminar.
+    key(n) {
+      const space = n === 0;
+      noise(0.025, { filter: "bandpass", freq: space ? 1700 : 3000 + ((n || 0) % 4) * 350, vol: 0.9 });
+      tone(space ? 120 : 170 + ((n || 0) % 3) * 15, 0.025, { type: "triangle", vol: 0.22 });
     },
+    enter() { tone(1320, 0.07, { type: "sine", vol: 0.18, at: 0.05 }); },
     // Saltos del monito: hacia arriba al salir, hacia abajo al esconderse.
     // Al salir: pitido de encendido. Al esconderse: el "compilado con éxito".
     jumpOut() { tone(880, 0.09, { type: "sine", vol: 0.2 }); },
@@ -181,7 +174,7 @@
     ko() { tone(600, 0.35, { type: "triangle", f2: 150, vol: 0.08 }); }
   };
   // Mínimo de tiempo entre repeticiones del mismo sonido, para que no se amontonen.
-  const GAP = { shoot: 0.07, move: 0.04, clash: 0.12, bossShot: 0.1, pop: 0.05 };
+  const GAP = { key: 0.03, shoot: 0.07, move: 0.04, clash: 0.12, bossShot: 0.1, pop: 0.05 };
 
   function play(name, arg) {
     if (muted || !SOUNDS[name]) return;

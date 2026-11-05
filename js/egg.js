@@ -11,9 +11,19 @@
   const MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace';
   const BODY = '"Chakra Petch", "Segoe UI", system-ui, sans-serif';
   const T_OUT = 0.8, T_DANCE = 5, T_IN = 0.9;          // salida, baile y salto de vuelta (segundos)
+  // El cartel se escribe letra por letra mientras baila: cada letra tiene su instante (con algo de
+  // irregularidad, como alguien tecleando) y una pausa corta al pasar a la segunda línea.
+  const TYPE_AT = [];
+  (function () {
+    let t = 0.15;
+    LINES.forEach((line, li) => {
+      if (li) t += 0.22;
+      for (let i = 0; i < line.length; i++) { TYPE_AT.push(t); t += 0.062 + ((i * 37 + li * 11) % 5) * 0.009; }
+    });
+  })();
   const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  let canvas = null, ctx = null, running = false, t0 = 0, lastBeat = -1, jumpedIn = false;
+  let canvas = null, ctx = null, running = false, t0 = 0, typed = 0, jumpedIn = false;
 
   const sfx = (n, a) => { if (window.SFX) SFX.play(n, a); };
   const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
@@ -95,7 +105,7 @@
     return { hand: { x: x + Math.cos(st.rot || 0) * (w / 2 + 8 * s), y: y - 4 * s + Math.sin(st.rot || 0) * (w / 2) } };
   }
 
-  function drawSign(hand, s, alpha, wiggle) {
+  function drawSign(hand, s, alpha, wiggle, shown, cursor) {
     if (alpha <= 0) return;
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -117,10 +127,19 @@
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 8 * s); else ctx.rect(bx, by, bw, bh);
     ctx.fill(); ctx.stroke();
-    ctx.fillStyle = COL.fg; ctx.textAlign = "center"; ctx.textBaseline = "top";
-    ctx.fillText(LINES[0], bx + bw / 2, by + pad);
-    ctx.fillStyle = COL.amber;
-    ctx.fillText(LINES[1], bx + bw / 2, by + pad + fs + 4 * s);
+    // Texto escrito hasta ahora, alineado a la izquierda como en un editor, con cursor.
+    ctx.textAlign = "left"; ctx.textBaseline = "top";
+    const n0 = Math.min(shown, LINES[0].length), n1 = Math.max(0, shown - LINES[0].length);
+    const t0 = LINES[0].slice(0, n0), t1 = LINES[1].slice(0, n1);
+    const x0 = bx + pad, y0 = by + pad, y1 = by + pad + fs + 4 * s;
+    ctx.fillStyle = COL.fg; ctx.fillText(t0, x0, y0);
+    ctx.fillStyle = COL.amber; ctx.fillText(t1, x0, y1);
+    if (cursor) {
+      const onSecond = shown >= LINES[0].length;
+      const cx = x0 + ctx.measureText(onSecond ? t1 : t0).width + 1 * s;
+      ctx.fillStyle = COL.cyan;
+      ctx.fillRect(cx, (onSecond ? y1 : y0) + 1 * s, 2 * s, fs);
+    }
     ctx.restore();
   }
 
@@ -132,7 +151,7 @@
       const k = ((t * 0.55 + i / 3) % 1);
       ctx.globalAlpha = Math.sin(Math.PI * k) * 0.8;
       ctx.fillStyle = i % 2 ? COL.cyan : COL.amber;
-      ctx.fillText(i % 2 ? "♫" : "♪", L.spot.x - 34 * L.s + i * 6 * L.s + Math.sin(k * 6 + i) * 6 * L.s, L.spot.y - 30 * L.s - k * 50 * L.s);
+      ctx.fillText(["{ }", ";", "</>"][i], L.spot.x - 34 * L.s + i * 6 * L.s + Math.sin(k * 6 + i) * 6 * L.s, L.spot.y - 30 * L.s - k * 50 * L.s);
     }
     ctx.restore();
   }
@@ -160,8 +179,14 @@
       signA = Math.max(0, (k - 0.6) / 0.4);
     } else if (t < T_OUT + T_DANCE) {                  // baila
       const d = t - T_OUT, beat = d * 2.4;             // ~144 pasos por minuto
-      const b = Math.floor(beat);
-      if (b !== lastBeat) { lastBeat = b; sfx("dance", b); }
+      let n = typed;
+      while (n < TYPE_AT.length && TYPE_AT[n] <= d) n++;
+      if (n > typed) {
+        const ch = n <= LINES[0].length ? LINES[0][n - 1] : LINES[1][n - 1 - LINES[0].length];
+        sfx("key", ch === " " ? 0 : n + 1);
+        if (n === TYPE_AT.length) sfx("enter");
+        typed = n;
+      }
       const ph = beat * Math.PI;
       const hop = reduced ? 0 : Math.abs(Math.sin(ph)) * 7 * L.s;
       pos = { x: L.spot.x + (reduced ? 0 : Math.sin(ph / 2) * 6 * L.s), y: L.spot.y - hop };
@@ -178,6 +203,7 @@
       pos = arc(L.spot, L.start, k, 90 * L.s);
       st.kickL = st.kickR = 0.9; st.wave = 1; st.rot = k * 0.5;
       signA = Math.max(0, 1 - k * 4);
+      typed = TYPE_AT.length;
     } else {
       ctx.restore();
       finish();
@@ -185,7 +211,8 @@
     }
     const m = drawMonito(pos.x, pos.y, L.s, st);
     ctx.restore();                                     // el cartel no se esconde tras la C
-    drawSign(m.hand, L.s, signA, wiggle);
+    const cursor = typed < TYPE_AT.length ? (t % 0.6 < 0.4 || typed > 0) : (t % 1 < 0.5);
+    drawSign(m.hand, L.s, signA, wiggle, typed, cursor);
     requestAnimationFrame(frame);
   }
 
@@ -201,7 +228,7 @@
   function start() {
     if (running) return;
     if (!canvas) setup();
-    running = true; lastBeat = -1; jumpedIn = false;
+    running = true; typed = 0; jumpedIn = false;
     canvas.hidden = false;
     // Escenario limpio: se pausan los duelos del fondo mientras baila.
     if (window.FightBG) {
