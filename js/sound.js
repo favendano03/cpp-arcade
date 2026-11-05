@@ -10,8 +10,25 @@
   try { muted = localStorage.getItem(KEY) === "1"; } catch (e) { muted = false; }
   const last = {};
 
+  // En iPhone/iPad, que el sonido del juego se escuche aunque el teléfono esté en modo silencio.
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { /* no soportado */ }
+
+  // Safari solo habilita el audio al terminar un toque o clic (touchend/click), no al apoyar el dedo,
+  // y puede dejar el contexto "interrupted". Por eso se reintenta en cada gesto hasta que quede sonando.
+  function unlock() {
+    if (ctx.state === "running") return;
+    try { const r = ctx.resume(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* nada */ }
+    // Un sonido vacío dentro del gesto termina de desbloquear el audio en Safari de iOS.
+    try {
+      const src = ctx.createBufferSource();
+      src.buffer = ctx.createBuffer(1, 1, 22050);
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch (e) { /* nada */ }
+  }
+
   function ensure() {
-    if (ctx) { if (ctx.state === "suspended") ctx.resume(); return true; }
+    if (ctx) { unlock(); return true; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return false;
     try {
@@ -22,10 +39,11 @@
       noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
       const d = noiseBuf.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      unlock();
     } catch (e) { ctx = null; return false; }
     return true;
   }
-  ["pointerdown", "keydown", "touchstart"].forEach(ev =>
+  ["pointerdown", "pointerup", "touchstart", "touchend", "mousedown", "click", "keydown"].forEach(ev =>
     window.addEventListener(ev, ensure, { capture: true, passive: true }));
 
   // Una nota: oscilador con envolvente corta. f2 permite un barrido de frecuencia.
