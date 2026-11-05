@@ -10,13 +10,12 @@
   try { muted = localStorage.getItem(KEY) === "1"; } catch (e) { muted = false; }
   const last = {};
 
-  // En iPhone/iPad, que el sonido del juego se escuche aunque el teléfono esté en modo silencio.
-  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { /* no soportado */ }
-
-  // Safari solo habilita el audio al terminar un toque o clic (touchend/click), no al apoyar el dedo,
-  // y puede dejar el contexto "interrupted". Por eso se reintenta en cada gesto hasta que quede sonando.
-  // Sonidos pedidos mientras el navegador todavía estaba activando el audio (Safari tarda un poco
-  // después del primer clic): se tocan apenas el audio queda listo, si no pasó demasiado tiempo.
+  // Cómo se activa el audio, sobre todo en iPhone:
+  // - iOS solo habilita el sonido al TERMINAR un toque (touchend/click), no al apoyar el dedo, así que el
+  //   contexto de audio se crea y se reanuda solo en esos eventos.
+  // - En el primer toque también se reproduce un audio HTML vacío: eso pasa el iPhone a modo "reproducción"
+  //   y evita que el interruptor de silencio apague el juego.
+  // - Si tras un toque el contexto sigue sin sonar, se descarta y se crea uno nuevo en el siguiente toque.
   let queued = [];
   function flushQueued() {
     const now = performance.now();
@@ -24,25 +23,30 @@
     queued = [];
     list.forEach(q => play(q.name, q.arg));
   }
-  function unlock() {
-    if (ctx.state === "running") return;
+
+  let htmlUnlocked = false;
+  function unlockHtmlAudio() {
+    if (htmlUnlocked) return;
+    htmlUnlocked = true;
     try {
-      const r = ctx.resume();
-      if (r && r.then) r.then(flushQueued, () => {});
-    } catch (e) { /* nada */ }
-    // Un sonido vacío dentro del gesto termina de desbloquear el audio en Safari de iOS.
-    try {
-      const src = ctx.createBufferSource();
-      src.buffer = ctx.createBuffer(1, 1, 22050);
-      src.connect(ctx.destination);
-      src.start(0);
-    } catch (e) { /* nada */ }
+      // WAV de 0,05 s en silencio.
+      const sr = 8000, n = 400, buf = new ArrayBuffer(44 + n), v = new DataView(buf);
+      const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+      w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+      v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+      w(36, "data"); v.setUint32(40, n, true);
+      for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+      const a = new Audio(URL.createObjectURL(new Blob([buf], { type: "audio/wav" })));
+      a.setAttribute("playsinline", "");
+      const r = a.play();
+      if (r && r.catch) r.catch(() => { htmlUnlocked = false; });
+    } catch (e) { htmlUnlocked = false; }
   }
 
-  function ensure() {
-    if (ctx) { unlock(); return true; }
+  function create() {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return false;
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { /* no soportado */ }
     try {
       ctx = new AC();
       master = ctx.createGain();
@@ -51,12 +55,47 @@
       noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
       const d = noiseBuf.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-      unlock();
+      ctx.onstatechange = () => { if (ctx && ctx.state === "running") flushQueued(); };
     } catch (e) { ctx = null; return false; }
     return true;
   }
-  ["pointerdown", "pointerup", "touchstart", "touchend", "mousedown", "click", "keydown"].forEach(ev =>
-    window.addEventListener(ev, ensure, { capture: true, passive: true }));
+
+  function unlock() {
+    if (ctx.state === "running") return;
+    const c = ctx;
+    try {
+      const r = c.resume();
+      if (r && r.then) r.then(flushQueued, () => {});
+    } catch (e) { /* nada */ }
+    // Un sonido vacío dentro del gesto termina de desbloquear el audio en Safari de iOS.
+    try {
+      const src = c.createBufferSource();
+      src.buffer = c.createBuffer(1, 1, 22050);
+      src.connect(c.destination);
+      src.start(0);
+    } catch (e) { /* nada */ }
+    // Si no arrancó, en el próximo toque se usa un contexto nuevo.
+    setTimeout(() => {
+      if (ctx === c && c.state !== "running") {
+        try { c.close(); } catch (e) { /* nada */ }
+        if (ctx === c) ctx = null;
+      }
+    }, 1000);
+  }
+
+  function ensure() {
+    if (!ctx && !create()) return false;
+    unlock();
+    return true;
+  }
+  // Solo eventos que el navegador considera "gesto del usuario" para activar audio.
+  function onGesture(e) {
+    if (e.type === "pointerup" && e.pointerType === "mouse") return; // el mousedown ya lo hizo
+    unlockHtmlAudio();
+    ensure();
+  }
+  ["mousedown", "pointerup", "touchend", "click", "keydown"].forEach(ev =>
+    window.addEventListener(ev, onGesture, { capture: true, passive: true }));
 
   // Una nota: oscilador con envolvente corta. f2 permite un barrido de frecuencia.
   function tone(f, dur, opt) {
