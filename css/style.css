@@ -514,3 +514,11 @@ select { width: 100%; }
 #screen-login, #screen-hub, #screen-result, #screen-review { padding-bottom: 56px; }
 /* En pantallas chicas va al final de la página (no flotando sobre los formularios). */
 @media (max-width: 700px) { .gh-link { position: absolute; bottom: 12px; } }
+
+/* ---------- Sorpresa de la C del título ---------- */
+.logo-c { cursor: pointer; display: inline-block; border-radius: 6px; }
+.logo-c:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
+.logo-c.wobble { animation: c-wobble 0.5s ease-out; }
+@keyframes c-wobble { 0% { transform: none; } 30% { transform: translateY(3px) scale(1.06, 0.92); } 60% { transform: translateY(-2px) rotate(-4deg); } 100% { transform: none; } }
+.egg-canvas { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; aspect-ratio: auto; margin: 0; z-index: 60; pointer-events: none; background: transparent; border: 0; border-radius: 0; }
+@media (prefers-reduced-motion: reduce) { .logo-c.wobble { animation: none; } }
