@@ -370,6 +370,7 @@ canvas {
 /* ---------- Modos de juego y secciones ---------- */
 .hub-nav { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .hub-nav .btn { padding: 6px 12px; font-size: 0.85rem; }
+.choice-back { align-self: flex-start; padding: 6px 12px; font-size: 0.85rem; }
 .crumb { font-family: var(--font-code); font-size: 0.8rem; color: var(--cyan); letter-spacing: 0.04em; }
 .mode-grid { display: flex; flex-direction: column; gap: 12px; }
 .view-title { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
@@ -485,3 +486,8 @@ canvas {
 .save-status.err { color: var(--bad); }
 select { width: 100%; }
 .brand .arena { margin-right: -46px; }
+
+/* ---------- Menú de inicio: elegir cómo jugar ---------- */
+#login-choice .view-title { text-align: center; }
+#login-choice .mode-card { align-items: center; text-align: center; padding-block: 22px; }
+#login-choice .mode-desc { max-width: 40ch; }

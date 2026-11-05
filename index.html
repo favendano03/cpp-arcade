@@ -29,8 +29,22 @@
       <div class="arena" aria-hidden="true" hidden><canvas id="arena-canvas"></canvas></div>
     </header>
 
+    <!-- Paso 1: elegir cómo jugar. Este primer clic también activa el sonido (los navegadores lo exigen). -->
+    <div id="login-choice" class="mode-grid">
+      <p class="view-title">¿Cómo quieres jugar?</p>
+      <button id="choice-cloud" class="mode-card" type="button">
+        <span class="mode-name small">Iniciar sesión</span>
+        <span class="mode-desc" id="choice-cloud-desc">Con Google o correo. Tu avance queda en la nube y lo sigues desde cualquier equipo.</span>
+      </button>
+      <button id="choice-local" class="mode-card alt" type="button">
+        <span class="mode-name small">Continuar sin iniciar sesión</span>
+        <span class="mode-desc">Juega con un perfil guardado solo en este navegador.</span>
+      </button>
+    </div>
+
     <!-- Cuenta en la nube (solo aparece si Firebase está configurado para este dominio) -->
     <div class="panel cloud-panel" id="cloud-box" hidden>
+      <button type="button" class="btn ghost choice-back">← Volver</button>
       <h2>Tu cuenta</h2>
       <p id="cloud-loading" class="muted" hidden>Conectando con tu cuenta…</p>
 
@@ -82,7 +96,8 @@
       <p id="cloud-msg" class="error" role="status" hidden></p>
     </div>
 
-    <div class="panel login-panel">
+    <div class="panel login-panel" id="local-box" hidden>
+      <button type="button" class="btn ghost choice-back">← Volver</button>
       <h2 id="local-title">Elige tu perfil</h2>
       <ul id="profile-list" class="profile-list"></ul>
       <p id="no-profiles" class="muted" hidden>Todavía no hay perfiles en este navegador. Crea uno para guardar tu avance.</p>

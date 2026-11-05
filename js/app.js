@@ -79,8 +79,17 @@
       ul.appendChild(li);
     }
     $("pin-form").hidden = true;
+    loginStep("choice");
     show("login");
   }
+  // Paso del menú de inicio: "choice" (dos bloques), "cloud" (cuenta) o "local" (perfiles sin cuenta).
+  function loginStep(step) {
+    $("login-choice").hidden = step !== "choice";
+    $("cloud-box").hidden = step !== "cloud";
+    $("local-box").hidden = step !== "local";
+  }
+  $("choice-local").addEventListener("click", () => loginStep("local"));
+  document.querySelectorAll(".choice-back").forEach(b => b.addEventListener("click", () => { $("pin-form").hidden = true; loginStep("choice"); }));
   function chooseProfile(id) {
     const p = Store.get(id);
     if (!p) return;
@@ -114,6 +123,7 @@
     msg.hidden = true;
     $("import-code").value = "";
     renderLogin();
+    loginStep("local");
   });
   $("import-file").addEventListener("change", e => {
     const f = e.target.files && e.target.files[0];
@@ -133,6 +143,7 @@
   /* ---------------- Cuenta en la nube ---------------- */
   const CLOUD = !!(window.Cloud && Cloud.available());
   let cloudUser = null, cloudProfile = null, autoEnter = false;
+  const CHOICE_CLOUD_DESC = $("choice-cloud-desc").textContent;
   function cloudMsg(text, ok) {
     const m = $("cloud-msg");
     m.textContent = text || "";
@@ -147,7 +158,7 @@
   }
   function renderCloud() {
     if (!CLOUD) return;
-    if (!cloudUser) { cloudProfile = null; cloudView("cloud-out"); return; }
+    if (!cloudUser) { cloudProfile = null; cloudView("cloud-out"); $("choice-cloud-desc").textContent = CHOICE_CLOUD_DESC; return; }
     cloudView("cloud-loading");
     Cloud.loadProfile(cloudUser.uid).then(p => {
       cloudProfile = p;
@@ -158,6 +169,7 @@
       $("cloud-meta").textContent = `${done}/${LEVELS.length} niveles · ${p.xp} XP`;
       $("cloud-email").textContent = cloudUser.email || "tu cuenta";
       cloudView("cloud-in");
+      $("choice-cloud-desc").textContent = `Sesión abierta como ${p.name}. Entra para seguir donde quedaste.`;
       if (autoEnter) { autoEnter = false; login(p); }
     }).catch(e => { cloudView("cloud-out"); cloudMsg(e.message); });
   }
@@ -175,9 +187,11 @@
     cloudView("cloud-setup");
     $("cloud-name").focus();
   }
+  // Sin nube (por ejemplo en una vista previa), solo queda la opción sin cuenta.
+  if (!CLOUD) $("choice-cloud").hidden = true;
+  $("choice-cloud").addEventListener("click", () => { if (CLOUD) loginStep("cloud"); });
   if (CLOUD) {
-    $("cloud-box").hidden = false;
-    $("local-title").textContent = "O juega sin cuenta";
+    $("local-title").textContent = "Juega sin cuenta";
     $("local-fineprint").textContent = "Los perfiles sin cuenta se guardan solo en este navegador. El PIN evita que otra persona juegue con tu perfil en el mismo computador; no es una contraseña segura.";
     cloudView("cloud-loading");
     Cloud.onAuth(u => { cloudUser = u; renderCloud(); });
