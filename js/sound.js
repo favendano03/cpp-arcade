@@ -148,6 +148,9 @@
     isMuted: () => muted,
     setMuted,
     toggle: () => setMuted(!muted),
-    onChange: fn => { listeners.push(fn); fn(muted); }
+    onChange: fn => { listeners.push(fn); fn(muted); },
+    // Para la prueba de sonido (cpparcade.cl/#audio).
+    debug: () => ({ ctx, state: ctx ? ctx.state : "sin crear", muted, queued: queued.length,
+      session: navigator.audioSession ? navigator.audioSession.type : "no soportado" })
   };
 })();
