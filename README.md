@@ -94,7 +94,7 @@ js/sound.js       efectos de sonido sintetizados (Web Audio, sin archivos)
 js/cloud.js       cuentas en la nube con Firebase (Google o correo)
 js/firebase-config.js  configuración pública del proyecto de Firebase
 firestore.rules   reglas de seguridad de la base de datos
-img/              ícono de la pestaña (favicon) y de la pantalla de inicio del celular
+img/, favicon.ico  ícono de la pestaña y de la pantalla de inicio del celular
 js/app.js         navegación entre pantallas y controles
 ```
 
