@@ -10,12 +10,13 @@
   try { muted = localStorage.getItem(KEY) === "1"; } catch (e) { muted = false; }
   const last = {};
 
-  // Cómo se activa el audio, sobre todo en iPhone:
-  // - iOS solo habilita el sonido al TERMINAR un toque (touchend/click), no al apoyar el dedo, así que el
-  //   contexto de audio se crea y se reanuda solo en esos eventos.
-  // - En el primer toque también se reproduce un audio HTML vacío: eso pasa el iPhone a modo "reproducción"
-  //   y evita que el interruptor de silencio apague el juego.
+  // Cómo se activa el audio. Computador: con el primer clic o tecla, de la forma normal.
+  // Pantallas táctiles (iPhone/iPad), que tienen reglas propias:
+  // - iOS solo habilita el sonido al TERMINAR un toque (touchend), no al apoyar el dedo.
+  // - En el primer toque también se reproduce un audio HTML vacío y se pide la sesión de audio "playback":
+  //   así el iPhone suena aunque esté en modo silencio.
   // - Si tras un toque el contexto sigue sin sonar, se descarta y se crea uno nuevo en el siguiente toque.
+  const TOUCH = (navigator.maxTouchPoints || 0) > 0 || "ontouchstart" in window;
   let queued = [];
   function flushQueued() {
     const now = performance.now();
@@ -46,7 +47,7 @@
   function create() {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return false;
-    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { /* no soportado */ }
+    if (TOUCH) { try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { /* no soportado */ } }
     try {
       ctx = new AC();
       master = ctx.createGain();
@@ -60,7 +61,7 @@
     return true;
   }
 
-  function unlock() {
+  function unlock(fromTouch) {
     if (ctx.state === "running") return;
     const c = ctx;
     try {
@@ -74,8 +75,8 @@
       src.connect(c.destination);
       src.start(0);
     } catch (e) { /* nada */ }
-    // Si no arrancó, en el próximo toque se usa un contexto nuevo.
-    setTimeout(() => {
+    // Si no arrancó, en el próximo toque se usa un contexto nuevo (solo en pantallas táctiles).
+    if (fromTouch) setTimeout(() => {
       if (ctx === c && c.state !== "running") {
         try { c.close(); } catch (e) { /* nada */ }
         if (ctx === c) ctx = null;
@@ -83,18 +84,20 @@
     }, 1000);
   }
 
-  function ensure() {
+  function ensure(fromTouch) {
     if (!ctx && !create()) return false;
-    unlock();
+    unlock(fromTouch);
     return true;
   }
   // Solo eventos que el navegador considera "gesto del usuario" para activar audio.
   function onGesture(e) {
-    if (e.type === "pointerup" && e.pointerType === "mouse") return; // el mousedown ya lo hizo
-    unlockHtmlAudio();
-    ensure();
+    const touch = e.type === "touchend" || (e.type === "pointerup" && e.pointerType !== "mouse");
+    if (e.type === "pointerup" && !touch) return;                       // mouse: ya lo hizo pointerdown
+    if (e.type === "pointerdown" && e.pointerType !== "mouse") return;  // dedo apoyado: aún no vale en iOS
+    if (touch) unlockHtmlAudio();
+    ensure(touch);
   }
-  ["mousedown", "pointerup", "touchend", "click", "keydown"].forEach(ev =>
+  ["pointerdown", "mousedown", "pointerup", "touchend", "click", "keydown"].forEach(ev =>
     window.addEventListener(ev, onGesture, { capture: true, passive: true }));
 
   // Una nota: oscilador con envolvente corta. f2 permite un barrido de frecuencia.
