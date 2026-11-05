@@ -1,5 +1,5 @@
 /* egg.js — sorpresa del menú de inicio: al tocar la "C" del título sale un monito bailando con un cartel
-   de agradecimiento, baila unos 8 segundos y vuelve a saltar detrás de la C. */
+   de agradecimiento, baila unos 5 segundos y vuelve a saltar detrás de la C. */
 (function () {
   "use strict";
 
@@ -10,12 +10,12 @@
   const COL = { amber: "#ffb547", amberDeep: "#c97d14", cyan: "#63d4e6", fg: "#f3e9dc", body: "#221a29", panel: "rgba(23,18,28,0.94)" };
   const MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace';
   const BODY = '"Chakra Petch", "Segoe UI", system-ui, sans-serif';
-  const T_OUT = 0.8, T_DANCE = 8, T_IN = 0.9;          // salida, baile y salto de vuelta (segundos)
+  const T_OUT = 0.8, T_DANCE = 5, T_IN = 0.9;          // salida, baile y salto de vuelta (segundos)
   const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  let canvas = null, ctx = null, running = false, t0 = 0, lastBeat = -1;
+  let canvas = null, ctx = null, running = false, t0 = 0, lastBeat = -1, jumpedIn = false;
 
-  const sfx = n => { if (window.SFX) SFX.play(n); };
+  const sfx = (n, a) => { if (window.SFX) SFX.play(n, a); };
   const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
   function setup() {
@@ -161,7 +161,7 @@
     } else if (t < T_OUT + T_DANCE) {                  // baila
       const d = t - T_OUT, beat = d * 2.4;             // ~144 pasos por minuto
       const b = Math.floor(beat);
-      if (b !== lastBeat) { lastBeat = b; if (b % 2 === 0) sfx("move"); }
+      if (b !== lastBeat) { lastBeat = b; sfx("dance", b); }
       const ph = beat * Math.PI;
       const hop = reduced ? 0 : Math.abs(Math.sin(ph)) * 7 * L.s;
       pos = { x: L.spot.x + (reduced ? 0 : Math.sin(ph / 2) * 6 * L.s), y: L.spot.y - hop };
@@ -173,6 +173,7 @@
       signA = 1; wiggle = reduced ? 0 : Math.sin(ph) * 0.05;
       if (!reduced) drawNotes(L, d);
     } else if (t < T_OUT + T_DANCE + T_IN) {          // vuelve a saltar detrás de la C
+      if (!jumpedIn) { jumpedIn = true; sfx("jumpIn"); }
       const k = ease((t - T_OUT - T_DANCE) / T_IN);
       pos = arc(L.spot, L.start, k, 90 * L.s);
       st.kickL = st.kickR = 0.9; st.wave = 1; st.rot = k * 0.5;
@@ -200,7 +201,7 @@
   function start() {
     if (running) return;
     if (!canvas) setup();
-    running = true; lastBeat = -1;
+    running = true; lastBeat = -1; jumpedIn = false;
     canvas.hidden = false;
     // Escenario limpio: se pausan los duelos del fondo mientras baila.
     if (window.FightBG) {
@@ -209,7 +210,7 @@
       if (arena) arena.getContext("2d").clearRect(0, 0, arena.width, arena.height);
     }
     resize();
-    sfx("start");
+    sfx("jumpOut");
     t0 = performance.now();
     requestAnimationFrame(frame);
   }

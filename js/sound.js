@@ -134,7 +134,31 @@
 
   const N = { C5: 523.25, D5: 587.33, E5: 659.25, G5: 783.99, A5: 880, C6: 1046.5, E6: 1318.5, G4: 392, E4: 329.63, C4: 261.63 };
 
+  // Música del monito que baila (sorpresa de la C): un compás por cada 4 pulsos, a 144 pulsos por minuto.
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);       // nota MIDI → Hz
+  const BEAT = 1 / 2.4;
+  const DANCE = [                                          // [bajo, melodía en corcheas (0 = silencio)]
+    [45, [76, 79, 81, 0, 84, 81, 79, 76]],                 // La menor
+    [41, [77, 81, 84, 0, 81, 77, 79, 81]],                 // Fa
+    [43, [79, 83, 86, 0, 83, 79, 81, 83]]                  // Sol
+  ];
+
   const SOUNDS = {
+    // Un pulso del baile: bombo, platillo, caja, bajo saltando de octava y la melodía.
+    dance(b) {
+      const n = b || 0, bar = DANCE[Math.floor(n / 4) % DANCE.length], i = n % 4, h = BEAT / 2;
+      tone(150, 0.14, { type: "sine", f2: 45, vol: 0.7 });
+      noise(0.04, { filter: "highpass", freq: 7000, vol: 0.16, at: h });
+      if (i % 2) noise(0.13, { filter: "bandpass", freq: 1900, vol: 0.32 });
+      tone(hz(bar[0]), 0.16, { type: "square", vol: 0.16 });
+      tone(hz(bar[0] + 12), 0.14, { type: "square", vol: 0.13, at: h });
+      [bar[1][i * 2], bar[1][i * 2 + 1]].forEach((m, k) => {
+        if (m) tone(hz(m), 0.17, { type: "triangle", vol: 0.34, at: k * h });
+      });
+    },
+    // Saltos del monito: hacia arriba al salir, hacia abajo al esconderse.
+    jumpOut() { tone(260, 0.28, { type: "triangle", f2: 1040, vol: 0.4 }); tone(520, 0.2, { type: "square", f2: 1560, vol: 0.06, at: 0.04 }); },
+    jumpIn() { tone(1000, 0.35, { type: "triangle", f2: 180, vol: 0.4 }); noise(0.12, { freq: 1200, freq2: 200, vol: 0.25, at: 0.3 }); },
     click() { tone(880, 0.05, { vol: 0.18 }); },
     move() { tone(520, 0.03, { vol: 0.08, type: "triangle" }); },
     start() { tone(N.C5, 0.08, { vol: 0.3 }); tone(N.G5, 0.12, { vol: 0.3, at: 0.09 }); },
