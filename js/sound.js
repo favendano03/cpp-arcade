@@ -134,25 +134,26 @@
 
   const N = { C5: 523.25, D5: 587.33, E5: 659.25, G5: 783.99, A5: 880, C6: 1046.5, E6: 1318.5, G4: 392, E4: 329.63, C4: 261.63 };
 
-  // Música del monito que baila (sorpresa de la C): cajita de música tranquila, un acorde cada 4 pulsos.
-  const hz = m => 440 * Math.pow(2, (m - 69) / 12);       // nota MIDI → Hz
-  const DANCE = [                                          // [bajo, una nota por pulso]
-    [57, [69, 72, 76, 72]],                                // La menor
-    [53, [69, 72, 77, 72]],                                // Fa
-    [55, [71, 74, 79, 74]]                                 // Sol
-  ];
+  // Sonido del monito que baila (sorpresa de la C): alguien programando en un teclado mecánico,
+  // con pitidos cortos de terminal. Cada pulso trae 2 o 3 teclas, con un ritmo fijo para que no suene al azar.
+  const KEYS = [[0, 0.13, 0.27], [0.06, 0.22], [0, 0.1, 0.19, 0.31], [0.08, 0.24]];
+  const BEEPS = [1320, 0, 990, 0, 1320, 1760, 0, 0, 1180, 0, 990, 1320];
 
   const SOUNDS = {
-    // Un pulso del baile: una nota suave; al empezar cada acorde, un bajo largo debajo.
+    // Un pulso del baile: teclas y, a veces, un pitido de terminal.
     dance(b) {
-      const n = b || 0, bar = DANCE[Math.floor(n / 4) % DANCE.length], i = n % 4;
-      if (i === 0) tone(hz(bar[0] - 12), 1.6, { type: "sine", vol: 0.3 });
-      tone(hz(bar[1][i]), 0.7, { type: "sine", vol: 0.3 });
-      tone(hz(bar[1][i] + 12), 0.35, { type: "triangle", vol: 0.04 });
+      const n = b || 0;
+      KEYS[n % KEYS.length].forEach((at, k) => {
+        noise(0.025, { filter: "bandpass", freq: 3200 + ((n + k) % 3) * 500, vol: 0.9, at });
+        tone(180, 0.02, { type: "triangle", vol: 0.22, at });
+      });
+      const f = BEEPS[n % BEEPS.length];
+      if (f) tone(f, 0.06, { type: "sine", vol: 0.2, at: 0.36 });
     },
     // Saltos del monito: hacia arriba al salir, hacia abajo al esconderse.
-    jumpOut() { tone(330, 0.3, { type: "sine", f2: 660, vol: 0.18 }); },
-    jumpIn() { tone(660, 0.35, { type: "sine", f2: 330, vol: 0.18 }); },
+    // Al salir: pitido de encendido. Al esconderse: el "compilado con éxito".
+    jumpOut() { tone(880, 0.09, { type: "sine", vol: 0.2 }); },
+    jumpIn() { tone(880, 0.08, { type: "sine", vol: 0.2 }); tone(1320, 0.18, { type: "sine", vol: 0.2, at: 0.1 }); },
     click() { tone(880, 0.05, { vol: 0.18 }); },
     move() { tone(520, 0.03, { vol: 0.08, type: "triangle" }); },
     start() { tone(N.C5, 0.08, { vol: 0.3 }); tone(N.G5, 0.12, { vol: 0.3, at: 0.09 }); },
