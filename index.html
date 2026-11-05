@@ -24,8 +24,61 @@
       <div class="arena" aria-hidden="true" hidden><canvas id="arena-canvas"></canvas></div>
     </header>
 
+    <!-- Cuenta en la nube (solo aparece si Firebase está configurado para este dominio) -->
+    <div class="panel cloud-panel" id="cloud-box" hidden>
+      <h2>Tu cuenta</h2>
+      <p id="cloud-loading" class="muted" hidden>Conectando con tu cuenta…</p>
+
+      <div id="cloud-out" class="stack-form tight" hidden>
+        <p class="muted">Entra para guardar tu avance en la nube y seguir jugando desde cualquier equipo.</p>
+        <button id="btn-google" class="btn primary google-btn" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.4h6.5a5.6 5.6 0 0 1-2.4 3.6v3h3.9c2.2-2.1 3.5-5.1 3.5-8.7z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.1 0-5.8-2.1-6.7-5H1.3v3.1A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.3 14.3a7.2 7.2 0 0 1 0-4.6V6.6H1.3a12 12 0 0 0 0 10.8z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.3 6.6l4 3.1c.9-2.8 3.6-4.9 6.7-4.9z"/></svg>
+          Entrar con Google
+        </button>
+        <details id="email-box" class="new-profile">
+          <summary class="btn secondary">Entrar con correo</summary>
+          <form id="email-form" class="stack-form">
+            <label for="email-input">Correo</label>
+            <input id="email-input" type="email" autocomplete="email" required>
+            <label for="pw-input">Contraseña <span class="muted">(mínimo 6 caracteres)</span></label>
+            <input id="pw-input" type="password" autocomplete="current-password">
+            <div class="row">
+              <button type="submit" class="btn primary">Entrar</button>
+              <button type="button" id="btn-signup" class="btn secondary">Crear cuenta</button>
+            </div>
+            <button type="button" id="btn-reset" class="linkish">Olvidé mi contraseña</button>
+          </form>
+        </details>
+      </div>
+
+      <div id="cloud-in" class="stack-form tight" hidden>
+        <button id="btn-cloud-continue" class="profile-btn" type="button">
+          <span class="avatar" id="cloud-avatar">J</span>
+          <span class="profile-meta"><strong id="cloud-name-label">Jugador</strong><span id="cloud-meta">0 niveles</span></span>
+          <span class="lock">Nube</span>
+        </button>
+        <p class="muted small">Conectado como <span id="cloud-email"></span>. <button type="button" id="btn-cloud-signout" class="linkish">Cerrar sesión</button></p>
+      </div>
+
+      <form id="cloud-setup" class="stack-form tight" hidden>
+        <p>¡Bienvenido! Elige tu nombre de jugador.</p>
+        <label for="cloud-name">Nombre</label>
+        <input id="cloud-name" type="text" maxlength="16" autocomplete="nickname" required>
+        <div id="cloud-migrate-wrap" class="stack-form tight" hidden>
+          <label for="cloud-migrate">¿Quieres traer el avance de un perfil de este equipo?</label>
+          <select id="cloud-migrate"></select>
+        </div>
+        <div class="row">
+          <button type="submit" class="btn primary">Crear mi perfil</button>
+          <button type="button" id="cloud-setup-cancel" class="btn ghost">Cancelar</button>
+        </div>
+      </form>
+
+      <p id="cloud-msg" class="error" role="status" hidden></p>
+    </div>
+
     <div class="panel login-panel">
-      <h2>Elige tu perfil</h2>
+      <h2 id="local-title">Elige tu perfil</h2>
       <ul id="profile-list" class="profile-list"></ul>
       <p id="no-profiles" class="muted" hidden>Todavía no hay perfiles en este navegador. Crea uno para guardar tu avance.</p>
 
@@ -63,7 +116,7 @@
         </form>
       </details>
 
-      <p class="fineprint">Los perfiles se guardan en este navegador. El PIN solo evita que otra persona juegue con tu perfil en el mismo computador; no es una contraseña segura. Para llevar tu avance a otro equipo, usa “Exportar partida”.</p>
+      <p class="fineprint" id="local-fineprint">Los perfiles se guardan en este navegador. El PIN solo evita que otra persona juegue con tu perfil en el mismo computador; no es una contraseña segura. Para llevar tu avance a otro equipo, usa “Exportar partida”.</p>
     </div>
   </section>
 
@@ -73,6 +126,7 @@
       <div>
         <p class="eyebrow">Sesión iniciada</p>
         <h2 class="hub-name" id="hub-name">Jugador</h2>
+        <p class="save-status" id="hub-save"></p>
       </div>
       <div class="hub-stats">
         <div><span class="stat-label">XP</span><span class="stat-val" id="hub-xp">0</span></div>
@@ -242,6 +296,8 @@
 <script src="js/questions.js"></script>
 <script src="js/engines.js"></script>
 <script src="js/sound.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/cloud.js"></script>
 <script src="js/bg.js"></script>
 <script src="js/app.js"></script>
 </body>

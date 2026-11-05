@@ -57,6 +57,21 @@ El menú de inicio permite crear perfiles con PIN opcional. Todo se guarda en el
 - Para llevar tu avance a otro equipo, usa **Exportar partida** (código o archivo `.json`) y después **Importar partida guardada** en el menú de inicio.
 - El PIN solo evita que otra persona use tu perfil en el mismo computador; no es una contraseña segura.
 
+## Cuentas en la nube (opcional)
+
+Si `js/firebase-config.js` tiene la configuración de un proyecto de Firebase, el menú de inicio ofrece
+**Entrar con Google** o **con correo**. El avance de cada cuenta se guarda en Firestore (`users/{uid}`) y se
+sincroniza entre equipos; al crear la cuenta se puede traer el avance de un perfil local. Sin configuración,
+el juego funciona solo con perfiles del navegador.
+
+Para habilitarlo en Firebase:
+1. Authentication → Sign-in method: activar Google y Email/Password.
+2. Authentication → Settings → Authorized domains: agregar el dominio donde se publica el juego.
+3. Firestore Database → Rules: pegar el contenido de `firestore.rules` y publicar.
+4. Agregar el dominio también en la lista `hosts` de `js/firebase-config.js`.
+
+El SDK de Firebase (Apache-2.0) va incluido en `js/vendor/firebase/` y solo se descarga cuando hay cuentas habilitadas.
+
 ## Publicarlo en GitHub Pages
 
 1. Crea un repositorio nuevo en GitHub (por ejemplo `cpp-arcade`).
@@ -76,6 +91,9 @@ js/questions.js   contenido de los niveles y generadores de preguntas
 js/engines.js     los tres motores de juego (clasificador, disparos, carrera)
 js/bg.js          fondo animado del menú de inicio (duelos de conceptos)
 js/sound.js       efectos de sonido sintetizados (Web Audio, sin archivos)
+js/cloud.js       cuentas en la nube con Firebase (Google o correo)
+js/firebase-config.js  configuración pública del proyecto de Firebase
+firestore.rules   reglas de seguridad de la base de datos
 js/app.js         navegación entre pantallas y controles
 ```
 

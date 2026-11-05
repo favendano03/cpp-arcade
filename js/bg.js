@@ -97,6 +97,9 @@
     const gap = p.gap;
     const a = makeFighter(winLeft ? info.w : info.l, COLORS.a, 1, p.x - gap, p.y);
     const b = makeFighter(winLeft ? info.l : info.w, COLORS.b, -1, p.x + gap, p.y);
+    // Que ninguno parta fuera del lienzo (en la franja del celular el espacio es justo).
+    a.x = Math.max(a.x, a.w / 2 + 6);
+    b.x = Math.min(b.x, W - b.w / 2 - 6);
     duels.push({ a, b, info, winner: winLeft ? a : b, mx: p.x, y: p.y, phase: "walk", t: 0, hits: 2 + Math.floor(Math.random() * 3), title: 0, cap: 0 });
   }
 

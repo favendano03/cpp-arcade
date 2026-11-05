@@ -125,9 +125,101 @@
 
   function login(p) {
     profile = p;
-    Store.setLast(p.id);
+    if (!p.cloud) Store.setLast(p.id);
     hubView = "modes";
     renderHub();
+  }
+
+  /* ---------------- Cuenta en la nube ---------------- */
+  const CLOUD = !!(window.Cloud && Cloud.available());
+  let cloudUser = null, cloudProfile = null, autoEnter = false;
+  function cloudMsg(text, ok) {
+    const m = $("cloud-msg");
+    m.textContent = text || "";
+    m.className = ok ? "muted small" : "error";
+    m.hidden = !text;
+  }
+  function cloudView(v) {
+    ["cloud-loading", "cloud-out", "cloud-in", "cloud-setup"].forEach(id => { $(id).hidden = id !== v; });
+  }
+  function busy(on) {
+    $("cloud-box").querySelectorAll("button, input, select").forEach(el => { el.disabled = on; });
+  }
+  function renderCloud() {
+    if (!CLOUD) return;
+    if (!cloudUser) { cloudProfile = null; cloudView("cloud-out"); return; }
+    cloudView("cloud-loading");
+    Cloud.loadProfile(cloudUser.uid).then(p => {
+      cloudProfile = p;
+      if (!p) return showSetup();
+      const done = LEVELS.filter(l => p.levels[l.id] && p.levels[l.id].done).length;
+      $("cloud-avatar").textContent = p.name.charAt(0).toUpperCase();
+      $("cloud-name-label").textContent = p.name;
+      $("cloud-meta").textContent = `${done}/${LEVELS.length} niveles · ${p.xp} XP`;
+      $("cloud-email").textContent = cloudUser.email || "tu cuenta";
+      cloudView("cloud-in");
+      if (autoEnter) { autoEnter = false; login(p); }
+    }).catch(e => { cloudView("cloud-out"); cloudMsg(e.message); });
+  }
+  function showSetup() {
+    autoEnter = false;
+    const guess = (cloudUser.name || (cloudUser.email || "").split("@")[0] || "").split(" ")[0].slice(0, 16);
+    $("cloud-name").value = guess;
+    const locals = Store.list();
+    const sel = $("cloud-migrate");
+    sel.innerHTML = '<option value="">No, empezar desde cero</option>' + locals.map(p => {
+      const done = LEVELS.filter(l => p.levels[l.id] && p.levels[l.id].done).length;
+      return `<option value="${esc(p.id)}">${esc(p.name)} (${done}/${LEVELS.length} niveles · ${p.xp} XP)</option>`;
+    }).join("");
+    $("cloud-migrate-wrap").hidden = locals.length === 0;
+    cloudView("cloud-setup");
+    $("cloud-name").focus();
+  }
+  if (CLOUD) {
+    $("cloud-box").hidden = false;
+    $("local-title").textContent = "O juega sin cuenta";
+    $("local-fineprint").textContent = "Los perfiles sin cuenta se guardan solo en este navegador. El PIN evita que otra persona juegue con tu perfil en el mismo computador; no es una contraseña segura.";
+    cloudView("cloud-loading");
+    Cloud.onAuth(u => { cloudUser = u; renderCloud(); });
+    const run = (promise, okText) => {
+      cloudMsg("");
+      busy(true);
+      return promise.then(r => { if (okText) cloudMsg(okText, true); return r; })
+        .catch(e => { autoEnter = false; cloudMsg(e.message); })
+        .finally(() => busy(false));
+    };
+    $("btn-google").addEventListener("click", () => { autoEnter = true; run(Cloud.signInGoogle()); });
+    $("email-form").addEventListener("submit", e => {
+      e.preventDefault();
+      autoEnter = true;
+      run(Cloud.signInEmail($("email-input").value, $("pw-input").value));
+    });
+    $("btn-signup").addEventListener("click", () => {
+      if (!$("email-form").reportValidity()) return;
+      autoEnter = true;
+      run(Cloud.signUpEmail($("email-input").value, $("pw-input").value));
+    });
+    $("btn-reset").addEventListener("click", () => {
+      if (!$("email-input").value.trim()) { cloudMsg("Escribe tu correo arriba y vuelve a apretar “Olvidé mi contraseña”."); return; }
+      run(Cloud.resetPassword($("email-input").value), "Te enviamos un correo para crear una contraseña nueva. Revisa también la carpeta de spam.");
+    });
+    $("btn-cloud-continue").addEventListener("click", () => { if (cloudProfile) login(cloudProfile); });
+    $("btn-cloud-signout").addEventListener("click", () => run(Cloud.signOut()));
+    $("cloud-setup-cancel").addEventListener("click", () => run(Cloud.signOut()));
+    $("cloud-setup").addEventListener("submit", e => {
+      e.preventDefault();
+      const name = $("cloud-name").value.trim().slice(0, 16);
+      if (!name) return;
+      const local = $("cloud-migrate").value ? Store.get($("cloud-migrate").value) : null;
+      run(Cloud.createProfile(cloudUser, name, local)).then(p => { if (p) { cloudProfile = p; login(p); } });
+    });
+    Cloud.onStatus(st => {
+      const el = $("hub-save");
+      if (!profile || !profile.cloud) return;
+      if (st === "saved") { el.textContent = "☁ Avance guardado en tu cuenta"; el.className = "save-status ok"; }
+      else if (st === "saving" || st === "pending") { el.textContent = "☁ Guardando…"; el.className = "save-status"; }
+      else if (st.startsWith("error:")) { el.textContent = "⚠ " + st.slice(6) + " Se reintentará al guardar de nuevo."; el.className = "save-status err"; }
+    });
   }
 
   /* ---------------- Mapa de niveles ---------------- */
@@ -171,6 +263,9 @@
 
   function renderHub() {
     $("hub-name").textContent = profile.name;
+    if (profile.cloud) {
+      if (!/save-status (ok|err)/.test($("hub-save").className) || !$("hub-save").textContent) { $("hub-save").textContent = "☁ Avance guardado en tu cuenta"; $("hub-save").className = "save-status ok"; }
+    } else { $("hub-save").textContent = "Guardado solo en este equipo"; $("hub-save").className = "save-status"; }
     const camp = LEVELS.filter(l => !l.extra);
     const campDone = camp.filter(l => isDone(l.id)).length;
     $("mode-campaign-meta").textContent = `${campDone}/${camp.length} niveles completados`;
@@ -216,7 +311,12 @@
     $("export-box").hidden = true;
     show("hub");
   }
-  $("btn-logout").addEventListener("click", () => { profile = null; renderLogin(); });
+  $("btn-logout").addEventListener("click", () => {
+    const wasCloud = profile && profile.cloud;
+    profile = null;
+    if (wasCloud) Cloud.signOut().catch(() => {});
+    renderLogin();
+  });
   $("btn-review").addEventListener("click", renderReview);
   $("btn-export").addEventListener("click", () => {
     const box = $("export-box");

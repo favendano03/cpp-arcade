@@ -91,7 +91,7 @@ p { margin: 0; }
 .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 label { font-size: 0.9rem; font-weight: 600; }
 
-input[type="text"], input[type="password"], textarea {
+input[type="text"], input[type="password"], input[type="email"], select, textarea {
   background: var(--ink);
   color: var(--fg);
   border: 1px solid var(--line);
@@ -470,3 +470,17 @@ canvas {
 .sound-toggle:focus-visible, .sound-icon:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 .hub-head, .brand { padding-right: 46px; }
 @media (max-width: 480px) { .hud { gap: 8px; } }
+
+/* ---------- Cuenta en la nube ---------- */
+.stack-form.tight { padding-top: 0; }
+.cloud-panel { border-color: rgba(99, 212, 230, 0.45); }
+.google-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: #fff; color: #1f1f1f; box-shadow: 0 3px 0 #b9b2c0; }
+.google-btn:hover { background: #f1eef4; }
+.linkish { background: none; border: 0; padding: 0; color: var(--cyan); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; align-self: flex-start; }
+.linkish:hover { color: var(--fg); }
+.small { font-size: 0.85rem; }
+.save-status { font-family: var(--font-code); font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.save-status.ok { color: var(--good); }
+.save-status.err { color: var(--bad); }
+select { width: 100%; }
+.brand .arena { margin-right: -46px; }

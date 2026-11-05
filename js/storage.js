@@ -72,8 +72,10 @@
     },
     setLast(id) { load().lastProfile = id; persist(); },
     save(profile) {
-      const db = load();
       profile.lastPlayed = Date.now();
+      // Los perfiles de cuenta se guardan en la nube, no en este navegador.
+      if (profile.cloud) { if (window.Cloud) window.Cloud.save(profile); return; }
+      const db = load();
       db.profiles[profile.id] = profile;
       persist();
     },
@@ -121,6 +123,11 @@
         return { error: "Ese archivo no es una partida de C++ Arcade." };
       }
       const p = data.profile;
+      // Un código exportado desde una cuenta se importa como perfil local de este equipo.
+      if (p.cloud || String(p.id).startsWith("cloud:")) {
+        delete p.cloud; delete p.uid;
+        p.id = "p" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+      }
       p.levels = p.levels || {};
       p.missed = Array.isArray(p.missed) ? p.missed : [];
       p.xp = Number(p.xp) || 0;
