@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>C++ Arcade</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Arcade para aprender los conceptos de C++: memoria, punteros, control de flujo y clases.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <button id="btn-sound" class="sound-toggle" type="button" aria-label="Silenciar sonido" title="Sonido (M)"></button>
+
+  <!-- ============ MENÚ DE INICIO / LOGIN ============ -->
+  <section id="screen-login" class="screen">
+    <header class="brand">
+      <h1 class="logo"><span>C<b>++</b></span><span>Arcade</span></h1>
+      <p class="tagline">Un arcade para entender el lenguaje C++ de forma alternativa y complementaria</p>
+      <div class="arena" aria-hidden="true" hidden><canvas id="arena-canvas"></canvas></div>
+    </header>
+
+    <div class="panel login-panel">
+      <h2>Elige tu perfil</h2>
+      <ul id="profile-list" class="profile-list"></ul>
+      <p id="no-profiles" class="muted" hidden>Todavía no hay perfiles en este navegador. Crea uno para guardar tu avance.</p>
+
+      <form id="pin-form" class="stack-form" hidden>
+        <label for="pin-input">PIN de <strong id="pin-name"></strong></label>
+        <div class="row">
+          <input id="pin-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••">
+          <button type="submit" class="btn primary">Entrar</button>
+          <button type="button" id="pin-cancel" class="btn ghost">Volver</button>
+        </div>
+        <p id="pin-error" class="error" hidden>PIN incorrecto. Intenta de nuevo.</p>
+      </form>
+
+      <details id="new-profile" class="new-profile">
+        <summary class="btn secondary">+ Crear perfil nuevo</summary>
+        <form id="create-form" class="stack-form">
+          <label for="new-name">Nombre</label>
+          <input id="new-name" type="text" maxlength="16" autocomplete="off" placeholder="Ej: Felipe" required>
+          <label for="new-pin">PIN de 4 dígitos <span class="muted">(opcional)</span></label>
+          <input id="new-pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Déjalo vacío si no quieres PIN">
+          <p id="create-error" class="error" hidden></p>
+          <button type="submit" class="btn primary">Crear y entrar</button>
+        </form>
+      </details>
+
+      <details class="new-profile">
+        <summary class="btn ghost">Importar partida guardada</summary>
+        <form id="import-form" class="stack-form">
+          <label for="import-code">Pega tu código de partida</label>
+          <textarea id="import-code" rows="3" placeholder="SH1:..."></textarea>
+          <label for="import-file">o carga el archivo .json</label>
+          <input id="import-file" type="file" accept=".json,application/json,text/plain">
+          <p id="import-msg" class="error" hidden></p>
+          <button type="submit" class="btn secondary">Importar</button>
+        </form>
+      </details>
+
+      <p class="fineprint">Los perfiles se guardan en este navegador. El PIN solo evita que otra persona juegue con tu perfil en el mismo computador; no es una contraseña segura. Para llevar tu avance a otro equipo, usa “Exportar partida”.</p>
+    </div>
+  </section>
+
+  <!-- ============ MAPA DE NIVELES ============ -->
+  <section id="screen-hub" class="screen" hidden>
+    <header class="hub-head">
+      <div>
+        <p class="eyebrow">Sesión iniciada</p>
+        <h2 class="hub-name" id="hub-name">Jugador</h2>
+      </div>
+      <div class="hub-stats">
+        <div><span class="stat-label">XP</span><span class="stat-val" id="hub-xp">0</span></div>
+        <div><span class="stat-label">Estrellas</span><span class="stat-val" id="hub-stars">0</span></div>
+        <div><span class="stat-label">Por repasar</span><span class="stat-val" id="hub-missed">0</span></div>
+      </div>
+    </header>
+
+    <nav id="hub-nav" class="hub-nav" hidden>
+      <button id="hub-back" class="btn ghost" type="button">← Volver</button>
+      <p class="crumb" id="hub-crumb"></p>
+    </nav>
+
+    <!-- Paso 1: modo de juego -->
+    <div id="view-modes" class="mode-grid">
+      <p class="view-title">Elige un modo de juego</p>
+      <button id="mode-campaign" class="mode-card" type="button">
+        <span class="mode-tag">Modo 1</span>
+        <span class="mode-name">Campaña</span>
+        <span class="mode-desc">Niveles ordenados según la materia, con jefes que ponen a prueba lo aprendido.</span>
+        <span class="mode-meta" id="mode-campaign-meta"></span>
+      </button>
+      <button id="mode-arcade" class="mode-card alt" type="button">
+        <span class="mode-tag">Modo 2</span>
+        <span class="mode-name">Arcade</span>
+        <span class="mode-desc">Casos cortos y rápidos para jugar sin parar.</span>
+        <span class="mode-meta soon-chip">Coming soon</span>
+      </button>
+    </div>
+
+    <!-- Paso 2: sección de la campaña -->
+    <div id="view-campaign" class="mode-grid" hidden>
+      <p class="view-title">Elige una sección</p>
+      <button id="sec-estructuras" class="mode-card" type="button">
+        <span class="mode-tag">Sección 1</span>
+        <span class="mode-name small">Estructuras y Funciones</span>
+        <span class="mode-desc">Del resumen “Bases de C++”: estructura de un programa, operadores, funciones, control de flujo y arreglos.</span>
+        <span class="mode-meta" id="sec-estructuras-meta"></span>
+      </button>
+      <button id="sec-memoria" class="mode-card alt" type="button">
+        <span class="mode-tag">Sección 2</span>
+        <span class="mode-name small">Gestión de memoria</span>
+        <span class="mode-desc">Stack, heap, punteros y fugas de memoria.</span>
+        <span class="mode-meta soon-chip">Coming soon</span>
+      </button>
+    </div>
+
+    <!-- Paso 3: niveles -->
+    <ol id="level-list" class="level-list" hidden></ol>
+
+    <div class="hub-actions">
+      <button id="btn-review" class="btn secondary">Repasar errores</button>
+      <button id="btn-export" class="btn ghost">Exportar partida</button>
+      <button id="btn-logout" class="btn ghost">Cerrar sesión</button>
+    </div>
+
+    <div id="soon-modal" class="soon-modal" role="dialog" aria-modal="true" aria-labelledby="soon-title" hidden>
+      <div class="soon-box">
+        <p class="eyebrow" id="soon-eyebrow"></p>
+        <h3 id="soon-title" class="soon-title">COMING SOON</h3>
+        <p class="muted" id="soon-text"></p>
+        <button id="soon-close" class="btn primary" type="button">OK</button>
+      </div>
+    </div>
+
+    <div id="export-box" class="panel export-box" hidden>
+      <h3>Tu código de partida</h3>
+      <p class="muted">Cópialo y guárdalo. En otro navegador, elige “Importar partida guardada” en el menú de inicio y pégalo.</p>
+      <textarea id="export-code" rows="4" readonly></textarea>
+      <div class="row">
+        <button id="btn-copy" class="btn primary">Copiar código</button>
+        <button id="btn-download" class="btn secondary" hidden>Descargar .json</button>
+        <span id="copy-msg" class="muted" aria-live="polite"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ JUEGO ============ -->
+  <section id="screen-play" class="screen play" hidden>
+    <div class="hud">
+      <button id="btn-pause" class="btn icon" aria-label="Pausa">II</button>
+      <button id="btn-sound-hud" class="btn icon sound-icon" aria-label="Silenciar sonido" title="Sonido (M)"></button>
+      <div class="hud-level" id="hud-level">Nivel</div>
+      <div class="hud-item"><span class="stat-label">Puntos</span><span id="hud-score" class="stat-val">0</span></div>
+      <div class="hud-item"><span class="stat-label">Combo</span><span id="hud-combo" class="stat-val">x1</span></div>
+      <div class="hud-item"><span class="stat-label">Vidas</span><span id="hud-lives" class="lives"></span></div>
+    </div>
+    <div class="progress"><div id="hud-progress"></div></div>
+
+    <div class="prompt" id="prompt">
+      <p class="prompt-ask" id="prompt-ask"></p>
+      <pre class="prompt-code" id="prompt-code"></pre>
+      <ol class="prompt-options" id="prompt-options" hidden></ol>
+    </div>
+
+    <div class="stage">
+      <canvas id="canvas" width="400" height="460" aria-label="Pantalla del juego"></canvas>
+
+      <div id="feedback" class="feedback" hidden>
+        <p class="fb-title" id="fb-title"></p>
+        <p class="fb-text" id="fb-text"></p>
+        <button id="fb-continue" class="btn primary">Entendido, seguir <kbd>Enter</kbd></button>
+      </div>
+
+      <div id="pause-menu" class="overlay" hidden>
+        <h3>Pausa</h3>
+        <button id="btn-resume" class="btn primary">Seguir jugando</button>
+        <button id="btn-restart" class="btn secondary">Reiniciar nivel</button>
+        <button id="btn-quit" class="btn ghost">Salir al mapa</button>
+      </div>
+
+      <div id="intro" class="overlay" hidden>
+        <p class="eyebrow" id="intro-eyebrow"></p>
+        <h3 id="intro-title"></h3>
+        <p id="intro-text"></p>
+        <p class="controls-help" id="intro-controls"></p>
+        <button id="btn-start" class="btn primary">Empezar <kbd>Espacio</kbd></button>
+      </div>
+    </div>
+
+    <div class="touch-controls">
+      <button class="btn pad" data-key="left" aria-label="Izquierda">◀</button>
+      <button class="btn pad action" data-key="action" id="pad-action">Acción</button>
+      <button class="btn pad" data-key="right" aria-label="Derecha">▶</button>
+    </div>
+  </section>
+
+  <!-- ============ RESULTADO ============ -->
+  <section id="screen-result" class="screen" hidden>
+    <div class="panel result">
+      <p class="eyebrow" id="res-eyebrow"></p>
+      <h2 id="res-title"></h2>
+      <div class="res-stars" id="res-stars"></div>
+      <div class="res-grid">
+        <div><span class="stat-label">Puntos</span><span class="stat-val" id="res-score"></span></div>
+        <div><span class="stat-label">Aciertos</span><span class="stat-val" id="res-acc"></span></div>
+        <div><span class="stat-label">Récord</span><span class="stat-val" id="res-best"></span></div>
+      </div>
+      <div id="res-missed-wrap">
+        <h3>Lo que conviene repasar</h3>
+        <ul id="res-missed" class="missed-list"></ul>
+      </div>
+      <div class="row">
+        <button id="res-retry" class="btn primary">Jugar de nuevo</button>
+        <button id="res-hub" class="btn secondary">Volver al mapa</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ REPASO ============ -->
+  <section id="screen-review" class="screen" hidden>
+    <div class="panel">
+      <p class="eyebrow">Repaso</p>
+      <h2>Errores guardados</h2>
+      <p class="muted">Cada vez que fallas una pregunta queda aquí con su explicación. Léelas antes de la prueba.</p>
+      <ul id="review-list" class="missed-list"></ul>
+      <p id="review-empty" class="muted" hidden>No tienes errores guardados. Buen trabajo.</p>
+      <div class="row">
+        <button id="review-back" class="btn primary">Volver al mapa</button>
+        <button id="review-clear" class="btn ghost">Borrar lista</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+<script src="js/storage.js"></script>
+<script src="js/questions.js"></script>
+<script src="js/engines.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/bg.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
