@@ -4,6 +4,7 @@
   "use strict";
 
   const W = 400, H = 460;
+  const THINK = 5;   // segundos extra para pensar cada pregunta (pedido 2026-11-05)
   const C = {
     bg: "#0f0b13", grid: "rgba(99,212,230,0.06)", gridText: "rgba(99,212,230,0.16)",
     amber: "#ffb547", amberDeep: "#c97d14", cyan: "#63d4e6", fg: "#f3e9dc", muted: "#a99bb1",
@@ -280,7 +281,8 @@
       const start = n === 3 ? 1 : (Math.random() < 0.5 ? 0 : 1);
       this.cur = { it, col: start, x: this.colX(start), y: -30, fast: false };
       const speedUp = this.answered / this.total;
-      this.cur.speed = lerp(34, 58, speedUp);
+      const fall = H - 96 + 30;
+      this.cur.speed = fall / (fall / lerp(34, 58, speedUp) + THINK);
       this.ui.prompt({ ask: it.ask, code: it.code, phase: this.phase.title || "" });
     }
     update(dt) {
@@ -456,7 +458,7 @@
       // Más tiempo cuando hay código que leer o alternativas largas en el panel
       const lines = q.code ? q.code.split("\n").length : 0;
       const extra = Math.min(6, lines * 0.6) + (this.isBoss ? 1.5 : 0);
-      const dur = lerp(14, 9, this.qi / this.questions.length) + extra;
+      const dur = lerp(14, 9, this.qi / this.questions.length) + extra + THINK;
       this.orbs = q.options.map((o, i) => ({
         i, label: this.isBoss ? "ABCD"[i] : o,
         bx: (W / n) * (i + 0.5), x: (W / n) * (i + 0.5), y: top, phase: Math.random() * 6
@@ -721,7 +723,8 @@
     get speed() {
       // tiempo de viaje de la compuerta: de ~10 s a ~6,5 s
       const dur = lerp(10, 6.5, Math.max(0, this.qi) / this.questions.length);
-      return (this.py + 60) / dur;
+      const base = (this.py + 60) / dur, trip = this.py + 200;   // una compuerta recorre ~py+200 px
+      return trip / (trip / base + THINK);
     }
     nextGate(y) {
       this.qi++;
