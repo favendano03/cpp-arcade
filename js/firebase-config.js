@@ -12,5 +12,5 @@ window.CPP_ARCADE_CLOUD = {
     appId: "1:925320588647:web:44f7d0dfed1bf46db4d3c2"
   },
   // Solo se ofrecen cuentas en estos dominios (en otros, por ejemplo una vista previa, se juega sin cuenta).
-  hosts: ["favendano03.github.io", "localhost", "127.0.0.1"]
+  hosts: ["cpparcade.cl", "www.cpparcade.cl", "favendano03.github.io", "localhost", "127.0.0.1"]
 };
