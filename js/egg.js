@@ -1,5 +1,5 @@
 /* egg.js — sorpresa del menú de inicio: al tocar la "C" del título sale un monito bailando con un cartel
-   de agradecimiento, baila unos 5 segundos y vuelve a saltar detrás de la C. */
+   de agradecimiento, baila unos 5 segundos y vuelve a meterse en la C. */
 (function () {
   "use strict";
 
@@ -52,7 +52,7 @@
   function layout() {
     const r = C_EL.getBoundingClientRect();
     const s = Math.max(0.85, Math.min(1.4, r.height / 52));
-    const start = { x: r.left + r.width / 2, y: r.top + r.height * 0.62 };
+    const start = { x: r.left + r.width * 0.55, y: r.top + r.height * 0.55 };
     let spot;
     const arena = ARENA && !ARENA.hidden ? ARENA.getBoundingClientRect() : null;
     if (arena && arena.height > 0) {
@@ -162,19 +162,15 @@
     if (!C_EL.offsetParent) { running = false; ctx.clearRect(0, 0, innerWidth, innerHeight); canvas.hidden = true; return; }
     const L = layout();
     ctx.clearRect(0, 0, innerWidth, innerHeight);
-    // Todo lo que esté dentro de la C queda "detrás" de ella.
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, innerWidth, innerHeight);
-    ctx.rect(L.r.left, L.r.top + L.r.height * 0.08, L.r.width, L.r.height * 0.92);
-    ctx.clip("evenodd");
-
+    // Sale de dentro de la C creciendo desde chiquitito y vuelve encogiéndose hasta desaparecer en ella
+    // (g = tamaño, a = opacidad), así no hay ningún recorte cuadrado alrededor de la letra.
     const st = { kickL: 0, kickR: 0, wave: 0.6, rot: 0, blink: false };
-    let pos, signA = 0, wiggle = 0;
+    let pos, signA = 0, wiggle = 0, g = 1, a = 1;
 
     if (t < T_OUT) {                                   // sale saltando desde detrás de la C
       const k = ease(t / T_OUT);
       pos = arc(L.start, L.spot, k, 70 * L.s);
+      g = 0.12 + 0.88 * k; a = Math.min(1, k * 2.5);
       st.kickL = st.kickR = 0.8; st.wave = 1; st.rot = (1 - k) * -0.4;
       signA = Math.max(0, (k - 0.6) / 0.4);
     } else if (t < T_OUT + T_DANCE) {                  // baila
@@ -201,16 +197,18 @@
       if (!jumpedIn) { jumpedIn = true; sfx("jumpIn"); }
       const k = ease((t - T_OUT - T_DANCE) / T_IN);
       pos = arc(L.spot, L.start, k, 90 * L.s);
+      g = 1 - 0.88 * k; a = Math.min(1, (1 - k) * 2.5);
       st.kickL = st.kickR = 0.9; st.wave = 1; st.rot = k * 0.5;
       signA = Math.max(0, 1 - k * 4);
       typed = TYPE_AT.length;
     } else {
-      ctx.restore();
       finish();
       return;
     }
-    const m = drawMonito(pos.x, pos.y, L.s, st);
-    ctx.restore();                                     // el cartel no se esconde tras la C
+    ctx.save();
+    ctx.globalAlpha = a;
+    const m = drawMonito(pos.x, pos.y, L.s * g, st);
+    ctx.restore();
     const cursor = typed < TYPE_AT.length ? (t % 0.6 < 0.4 || typed > 0) : (t % 1 < 0.5);
     drawSign(m.hand, L.s, signA, wiggle, typed, cursor);
     requestAnimationFrame(frame);
@@ -238,6 +236,7 @@
     }
     resize();
     sfx("jumpOut");
+    C_EL.classList.remove("wobble"); void C_EL.offsetWidth; C_EL.classList.add("wobble");   // la C "lo lanza"
     t0 = performance.now();
     requestAnimationFrame(frame);
   }
