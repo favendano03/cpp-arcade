@@ -41,7 +41,7 @@
     // Clic suave en los botones del menú (no en los del juego, que ya tienen sus propios sonidos).
     document.addEventListener("click", e => {
       const b = e.target.closest && e.target.closest(".btn, .level-card, .mode-card, .profile-list button, summary");
-      if (!b || b.closest(".touch-controls") || b.id === "btn-sound" || b.id === "btn-sound-hud") return;
+      if (!b || b.closest(".touch-controls") || b.closest("#login-choice") || b.id === "btn-sound" || b.id === "btn-sound-hud") return;
       setTimeout(() => SFX.play("click"), 0);
     });
   } else {
@@ -53,6 +53,7 @@
   function show(name) {
     screens.forEach(s => { $("screen-" + s).hidden = s !== name; });
     $("btn-sound").hidden = name === "play" || !window.SFX;
+    $("gh-link").hidden = name === "play";
     if (window.FightBG) { if (name === "login") FightBG.start(); else FightBG.stop(); }
     window.scrollTo(0, 0);
   }
@@ -88,7 +89,9 @@
     $("cloud-box").hidden = step !== "cloud";
     $("local-box").hidden = step !== "local";
   }
-  $("choice-local").addEventListener("click", () => loginStep("local"));
+  // Elegir cómo jugar es el primer clic: suena una entrada para que se note que el audio partió.
+  const sfxStart = () => { if (window.SFX) SFX.play("start"); };
+  $("choice-local").addEventListener("click", () => { sfxStart(); loginStep("local"); });
   document.querySelectorAll(".choice-back").forEach(b => b.addEventListener("click", () => { $("pin-form").hidden = true; loginStep("choice"); }));
   function chooseProfile(id) {
     const p = Store.get(id);
@@ -189,7 +192,7 @@
   }
   // Sin nube (por ejemplo en una vista previa), solo queda la opción sin cuenta.
   if (!CLOUD) $("choice-cloud").hidden = true;
-  $("choice-cloud").addEventListener("click", () => { if (CLOUD) loginStep("cloud"); });
+  $("choice-cloud").addEventListener("click", () => { if (!CLOUD) return; sfxStart(); loginStep("cloud"); });
   if (CLOUD) {
     $("local-title").textContent = "Juega sin cuenta";
     $("local-fineprint").textContent = "Los perfiles sin cuenta se guardan solo en este navegador. El PIN evita que otra persona juegue con tu perfil en el mismo computador; no es una contraseña segura.";

@@ -15,9 +15,21 @@
 
   // Safari solo habilita el audio al terminar un toque o clic (touchend/click), no al apoyar el dedo,
   // y puede dejar el contexto "interrupted". Por eso se reintenta en cada gesto hasta que quede sonando.
+  // Sonidos pedidos mientras el navegador todavía estaba activando el audio (Safari tarda un poco
+  // después del primer clic): se tocan apenas el audio queda listo, si no pasó demasiado tiempo.
+  let queued = [];
+  function flushQueued() {
+    const now = performance.now();
+    const list = queued.filter(q => now - q.t < 800);
+    queued = [];
+    list.forEach(q => play(q.name, q.arg));
+  }
   function unlock() {
     if (ctx.state === "running") return;
-    try { const r = ctx.resume(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* nada */ }
+    try {
+      const r = ctx.resume();
+      if (r && r.then) r.then(flushQueued, () => {});
+    } catch (e) { /* nada */ }
     // Un sonido vacío dentro del gesto termina de desbloquear el audio en Safari de iOS.
     try {
       const src = ctx.createBufferSource();
@@ -112,7 +124,11 @@
 
   function play(name, arg) {
     if (muted || !SOUNDS[name]) return;
-    if (!ctx || ctx.state !== "running") return;
+    if (!ctx) return;
+    if (ctx.state !== "running") {
+      if (!GAP[name]) { queued.push({ name, arg, t: performance.now() }); if (queued.length > 3) queued.shift(); }
+      return;
+    }
     const now = ctx.currentTime;
     if (GAP[name] && last[name] && now - last[name] < GAP[name]) return;
     last[name] = now;

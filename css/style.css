@@ -491,3 +491,26 @@ select { width: 100%; }
 #login-choice .view-title { text-align: center; }
 #login-choice .mode-card { align-items: center; text-align: center; padding-block: 22px; }
 #login-choice .mode-desc { max-width: 40ch; }
+
+/* ---------- Link a GitHub (esquina inferior derecha, fuera del juego) ---------- */
+.gh-link {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(34, 26, 41, 0.9);
+  color: var(--muted);
+  font-family: var(--font-code);
+  font-size: 0.78rem;
+  text-decoration: none;
+}
+.gh-link:hover { color: var(--fg); border-color: var(--cyan); }
+.gh-link:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+/* Espacio al final para que el link no tape el último botón en pantallas chicas. */
+#screen-login, #screen-hub, #screen-result, #screen-review { padding-bottom: 56px; }
+/* En pantallas chicas va al final de la página (no flotando sobre los formularios). */
+@media (max-width: 700px) { .gh-link { position: absolute; bottom: 12px; } }

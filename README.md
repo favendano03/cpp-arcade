@@ -1,23 +1,41 @@
 # C++ Arcade
 
-Arcade para aprender **conceptos** de C++ (no a escribir código): dónde vive cada dato en memoria, cómo se leen los punteros, qué hace cada estructura de control y cómo se diseña una clase con `.h` y `.cpp`.
+**Un arcade para entender el lenguaje C++ de forma alternativa y complementaria.**
 
-Hecho para el curso *Programación en Finanzas* (C++), con ejemplos de bonos y opciones.
+### [▶ Jugar en cpparcade.cl](https://cpparcade.cl)
 
-## Modos de juego
+![Menú de inicio de C++ Arcade, con duelos animados de conceptos de C++ en el fondo](docs/menu.png)
 
-Al iniciar sesión eliges un modo:
+<p align="center">
+  <img src="docs/modes.png" width="31%" alt="Pantalla de modos de juego en el celular">
+  <img src="docs/play.png" width="31%" alt="Nivel de disparos: elegir el máximo de un unsigned char">
+  <img src="docs/explain.png" width="31%" alt="Explicación después de acertar una pregunta">
+</p>
 
-- **Campaña**: niveles ordenados según la materia. Tiene dos secciones:
-  - **Estructuras y Funciones**: los 16 niveles y 4 jefes descritos abajo.
-  - **Gestión de memoria**: *coming soon*.
-- **Arcade**: casos cortos y más dinámicos. *Coming soon*.
+C++ Arcade enseña **conceptos** de C++, no a escribir código: qué hace el preprocesador, el compilador y el enlazador, cuánto mide cada tipo, qué pasa al pasar por valor o por referencia, cuándo una recursión se queda sin caso base, por qué `arr[10]` se sale de un arreglo de 10. Cada pregunta se responde jugando, y cada respuesta viene con una explicación corta.
 
-## Niveles
+Nació como herramienta de estudio para el curso *Programación en Finanzas* (C++), por eso varios ejemplos usan bonos y opciones.
 
-La campaña sigue el índice del resumen "Bases de C++, estructuras de programación y funciones": 16 niveles en 4 bloques. Al final de cada bloque hay un jefe que mezcla preguntas de sus 4 niveles, y el cuarto jefe es el final, con preguntas de los 16. Los niveles normales están siempre abiertos; cada jefe se desbloquea al completar su bloque, y el final pide además vencer a los otros tres.
+## Cómo se juega
 
-| Bloque | Nivel (sección del resumen) | Mecánica |
+- **Campaña**: 16 niveles en 4 bloques, con un jefe al final de cada bloque.
+  - **Estructuras y Funciones**: disponible.
+  - **Gestión de memoria**: próximamente.
+- **Arcade**: casos cortos y rápidos. Próximamente.
+
+Hay tres mecánicas:
+
+| Mecánica | Qué haces |
+|---|---|
+| **Clasificador** | Cae una pieza de código y la guías a la caja correcta (por ejemplo: ¿lo resuelve el preprocesador, el compilador o el enlazador?). |
+| **Disparos** | Disparas a la respuesta correcta entre varias que bajan por la pantalla. |
+| **Carrera** | Te cambias al carril de la respuesta correcta antes de chocar con las demás. |
+
+Los jefes mezclan preguntas de todo su bloque y atacan de formas distintas. Las preguntas de punteros y de control de flujo se generan al azar, así que cada partida es distinta. Después de cada respuesta el juego se pausa con una explicación hasta que aprietas **OK**, y los errores quedan guardados en **Repasar errores**.
+
+## Niveles de la campaña
+
+| Bloque | Nivel | Mecánica |
 |---|---|---|
 | 1 · Bases | Estructura de un programa: preprocesador, compilador o enlazador | Clasificador |
 | | Variables y ámbito | Carrera |
@@ -40,62 +58,46 @@ La campaña sigue el índice del resumen "Bases de C++, estructuras de programac
 | | Cadenas estilo C | Carrera |
 | | **Jefe final: Segmentation Fault** | Jefe, ataques mixtos |
 
-Fuera de la campaña quedan dos secciones extra con material de otros PPT del curso: **Memoria** (Stack o Heap, Cazapunteros, Detective de memoria, Jefe Memory Leak) y **Clases** (Arquitecto de clases, Vida de un objeto, Jefe Constructor Loco).
-
-Las preguntas de punteros y de control de flujo se generan al azar, así que cada partida es distinta. Cada error muestra una explicación que queda en pantalla hasta que la cierras (botón o `Enter`) y se guarda en **Repasar errores**.
+Los niveles normales están siempre abiertos, para estudiar el tema que quieras. Cada jefe se desbloquea al completar su bloque, y el final pide además vencer a los otros tres. Hay también dos secciones extra: **Memoria** (stack o heap, punteros, fugas de memoria) y **Clases** (diseño de una clase en `.h` y `.cpp`, vida de un objeto).
 
 ## Controles
 
-- Teclado: `◀ ▶` (o `A`/`D`) para moverte, `Espacio` para la acción (soltar / disparar), `Enter` para cerrar una explicación, `Esc` o `P` para pausar, `M` para silenciar o activar el sonido.
-- Celular: botones en pantalla debajo del juego. El botón del parlante (arriba a la derecha, o junto a la pausa) silencia el sonido.
+- **Teclado**: `◀ ▶` o `A`/`D` para moverte, `Espacio` para soltar o disparar, `Enter` para cerrar una explicación, `Esc` o `P` para pausar, `M` para el sonido.
+- **Celular**: botones en pantalla debajo del juego, y el parlante arriba a la derecha para el sonido.
 
-## Perfiles y partidas guardadas
+## Tu avance
 
-El menú de inicio permite crear perfiles con PIN opcional. Todo se guarda en el `localStorage` del navegador (no hay servidor), así que:
+- **Con cuenta** (Google o correo): el avance se guarda en la nube y se sigue desde cualquier equipo. Al crear la cuenta puedes traer el avance de un perfil del navegador.
+- **Sin cuenta**: perfiles guardados en el navegador, con PIN opcional. Para llevarlos a otro equipo está **Exportar partida** (código o archivo `.json`).
 
-- Cada navegador tiene sus propios perfiles.
-- Para llevar tu avance a otro equipo, usa **Exportar partida** (código o archivo `.json`) y después **Importar partida guardada** en el menú de inicio.
-- El PIN solo evita que otra persona use tu perfil en el mismo computador; no es una contraseña segura.
+## Cómo está hecho
 
-## Cuentas en la nube (opcional)
-
-Si `js/firebase-config.js` tiene la configuración de un proyecto de Firebase, el menú de inicio ofrece
-**Entrar con Google** o **con correo**. El avance de cada cuenta se guarda en Firestore (`users/{uid}`) y se
-sincroniza entre equipos; al crear la cuenta se puede traer el avance de un perfil local. Sin configuración,
-el juego funciona solo con perfiles del navegador.
-
-Para habilitarlo en Firebase:
-1. Authentication → Sign-in method: activar Google y Email/Password.
-2. Authentication → Settings → Authorized domains: agregar el dominio donde se publica el juego.
-3. Firestore Database → Rules: pegar el contenido de `firestore.rules` y publicar.
-4. Agregar el dominio también en la lista `hosts` de `js/firebase-config.js`.
-
-El SDK de Firebase (Apache-2.0) va incluido en `js/vendor/firebase/` y solo se descarga cuando hay cuentas habilitadas.
-
-## Publicarlo en GitHub Pages
-
-1. Crea un repositorio nuevo en GitHub (por ejemplo `cpp-arcade`).
-2. Sube el contenido de esta carpeta (o `git init`, `git add .`, `git commit`, `git push`).
-3. En el repo: **Settings → Pages → Build and deployment → Source: Deploy from a branch**, rama `main`, carpeta `/ (root)`.
-4. En uno o dos minutos queda en `https://<tu-usuario>.github.io/cpp-arcade/`.
-
-No necesita compilar nada: es HTML, CSS y JavaScript puro.
-
-## Estructura
+- **HTML, CSS y JavaScript puro**, sin frameworks ni compilación.
+- **Canvas 2D** con tres motores de juego propios (clasificador, disparos y carrera) y jefes con patrones de ataque.
+- **Web Audio**: todos los efectos de sonido se sintetizan en el navegador, sin archivos de audio.
+- **Firebase Authentication y Firestore** para las cuentas. Las [reglas de seguridad](firestore.rules) dejan que cada jugador lea y escriba solo su propio documento y validan los campos que se guardan.
+- **GitHub Pages** con dominio propio y diseño adaptado a celular.
 
 ```
-index.html        pantallas (login, mapa, juego, resultado, repaso)
-css/style.css     estilos
-js/storage.js     perfiles, guardado, exportar/importar
-js/questions.js   contenido de los niveles y generadores de preguntas
-js/engines.js     los tres motores de juego (clasificador, disparos, carrera)
-js/bg.js          fondo animado del menú de inicio (duelos de conceptos)
-js/sound.js       efectos de sonido sintetizados (Web Audio, sin archivos)
-js/cloud.js       cuentas en la nube con Firebase (Google o correo)
+index.html             pantallas (inicio, modos, juego, resultado, repaso)
+css/style.css          estilos
+js/questions.js        contenido de los niveles y generadores de preguntas
+js/engines.js          motores de juego (clasificador, disparos, carrera, jefes)
+js/app.js              navegación entre pantallas y controles
+js/storage.js          perfiles locales, exportar e importar
+js/cloud.js            cuentas en la nube (Firebase)
 js/firebase-config.js  configuración pública del proyecto de Firebase
-firestore.rules   reglas de seguridad de la base de datos
-img/, favicon.ico  ícono de la pestaña y de la pantalla de inicio del celular
-js/app.js         navegación entre pantallas y controles
+js/sound.js            efectos de sonido sintetizados
+js/bg.js               duelos animados del menú de inicio
+firestore.rules        reglas de seguridad de la base de datos
 ```
 
-Para agregar preguntas, edita `js/questions.js`: cada nivel tiene su lista o sus generadores.
+Para correrlo en tu computador basta un servidor estático, por ejemplo `python3 -m http.server` en esta carpeta, y abrir `http://localhost:8000`. Para agregar preguntas, edita `js/questions.js`.
+
+## In English
+
+**C++ Arcade** is a browser arcade game for learning C++ *concepts* (compilation stages, types and ranges, pass by value vs. reference, recursion, arrays) rather than syntax drills. A campaign of 16 levels and 4 bosses uses three mechanics (sort, shoot, lane runner), and every answer comes with a short explanation. Built with vanilla JavaScript and Canvas 2D, synthesized Web Audio sound effects, and Firebase Authentication + Firestore for cross-device progress. Play it at **[cpparcade.cl](https://cpparcade.cl)** (Spanish).
+
+## Licencia
+
+[MIT](LICENSE). El SDK de Firebase incluido en `js/vendor/firebase/` es Apache-2.0.
