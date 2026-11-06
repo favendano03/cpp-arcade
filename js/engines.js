@@ -283,6 +283,8 @@
       const speedUp = this.answered / this.total;
       const fall = H - 96 + 30;
       this.cur.speed = fall / (fall / lerp(34, 58, speedUp) + THINK);
+      // Monitos que corren dentro del bloque sin texto: cada uno con su lado, dirección y paso.
+      if (it.anon) this.cur.runners = [0, 1, 2].map(k => ({ x: (k - 1) * 40 + (Math.random() - 0.5) * 16, dir: k % 2 ? 1 : -1, ph: Math.random() * 6, sp: 0.8 + Math.random() * 0.4 }));
       this.ui.prompt({ ask: it.ask, code: it.code, phase: this.phase.title || "" });
     }
     update(dt) {
@@ -310,6 +312,18 @@
       if (Input.consume("action")) c.fast = true;
       c.x = lerp(c.x, this.colX(c.col), Math.min(1, dt * 14));
       c.y += (c.fast ? 520 : c.speed) * dt;
+      if (c.runners) {
+        // Más cerca del piso, más rápido corren (y a toda velocidad si se soltó rápido).
+        const k = clamp((c.y + 30) / (H - 96 + 30), 0, 1);
+        const v = (c.fast ? 260 : 26 + 190 * k * k);
+        const half = Math.min(W / this.bins.length - 16, 170) / 2 - 12;
+        for (const r of c.runners) {
+          r.x += r.dir * v * r.sp * dt;
+          r.ph += v * r.sp * dt * 0.22;
+          if (r.x > half) { r.x = half; r.dir = -1; }
+          if (r.x < -half) { r.x = -half; r.dir = 1; }
+        }
+      }
       if (c.y >= H - 96) this.land();
     }
     land() {
@@ -383,6 +397,7 @@
         ctx.beginPath(); ctx.moveTo(c.x, c.y + 24); ctx.lineTo(c.x, top); ctx.stroke();
         ctx.setLineDash([]);
         const bwid = Math.min(bw - 16, 170);
+        if (it.anon) { this.drawAnon(ctx, c, bwid, bw); return; }
         ctx.shadowColor = it.isDelete ? C.cyan : C.amber;
         ctx.shadowBlur = 16;
         roundRect(ctx, c.x - bwid / 2, c.y - 22, bwid, 44, 8);
@@ -394,6 +409,45 @@
         ctx.stroke();
         drawLabel(ctx, it.label, c.x, c.y, bwid - 14, 15, C.fg);
       }
+    }
+    // Bloque sin texto: toma el color de la columna sobre la que va pasando, con monitos corriendo dentro.
+    drawAnon(ctx, c, bwid, bw) {
+      const colIdx = clamp(Math.floor(c.x / bw), 0, this.bins.length - 1);
+      const col = BIN_COLORS[this.bins[colIdx]] || C.amber;
+      const x0 = c.x - bwid / 2, y0 = c.y - 22;
+      ctx.save();
+      ctx.shadowColor = col; ctx.shadowBlur = 16;
+      roundRect(ctx, x0, y0, bwid, 44, 8);
+      ctx.fillStyle = "#1c1522"; ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 0.22; ctx.fillStyle = col; ctx.fill();
+      ctx.globalAlpha = 1; ctx.lineWidth = 2; ctx.strokeStyle = col; ctx.stroke();
+      ctx.clip();
+      // piso del bloque
+      ctx.strokeStyle = col; ctx.globalAlpha = 0.35; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x0 + 6, c.y + 18); ctx.lineTo(x0 + bwid - 6, c.y + 18); ctx.stroke();
+      ctx.globalAlpha = 1;
+      for (const r of c.runners || []) this.drawRunner(ctx, c.x + r.x, c.y + 5, r, col);
+      ctx.restore();
+    }
+    // Mini monito: cuerpo, ojos mirando hacia donde corre y piernas que se alternan.
+    drawRunner(ctx, x, y, r, col) {
+      const sw = Math.sin(r.ph), bob = Math.abs(Math.cos(r.ph)) * 1.5;
+      ctx.save();
+      ctx.translate(x, y - bob);
+      ctx.scale(1.25, 1.25);
+      ctx.rotate(r.dir * 0.12);
+      ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-3, 5); ctx.lineTo(-3 + sw * 3.5, 9 + bob);
+      ctx.moveTo(3, 5); ctx.lineTo(3 - sw * 3.5, 9 + bob);
+      ctx.stroke();
+      roundRect(ctx, -7, -6, 14, 11, 3);
+      ctx.fillStyle = "#221a29"; ctx.fill(); ctx.stroke();
+      ctx.fillStyle = col;
+      ctx.fillRect(r.dir * 1.5 - 3.5, -3, 2, 3);
+      ctx.fillRect(r.dir * 1.5 + 1.5, -3, 2, 3);
+      ctx.restore();
     }
     drawPlates(ctx, cx, bottom, col) {
       const shown = Math.min(this.stackPlates, 5);

@@ -828,9 +828,10 @@
     for (let i = 0; i < n; i++) out.push(order[i % order.length]());
     return out;
   }
-  // Para clasificadores "caso #n": la etiqueta no delata la respuesta, el código está en el panel.
+  // Para clasificadores donde el código está en el panel: el bloque que cae va sin texto (anon),
+  // así no delata la respuesta; lleva monitos corriendo adentro.
   function cases(items, n, ask) {
-    return shuffle(items).slice(0, n).map((it, i) => Object.assign({ label: `caso #${i + 1}`, ask }, it));
+    return shuffle(items).slice(0, n).map((it, i) => Object.assign({ label: `caso #${i + 1}`, anon: true, ask }, it));
   }
 
   /* #####################################################################
