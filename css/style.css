@@ -522,3 +522,9 @@ select { width: 100%; }
 @keyframes c-wobble { 0% { transform: none; } 30% { transform: translateY(3px) scale(1.06, 0.92); } 60% { transform: translateY(-2px) rotate(-4deg); } 100% { transform: none; } }
 .egg-canvas { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; aspect-ratio: auto; margin: 0; z-index: 60; pointer-events: none; background: transparent; border: 0; border-radius: 0; }
 @media (prefers-reduced-motion: reduce) { .logo-c.wobble { animation: none; } }
+
+/* Pausa: la pregunta y el juego quedan tapados mientras el menú de pausa está abierto. */
+.play.is-paused .prompt > * { visibility: hidden; }
+.play.is-paused .prompt { position: relative; }
+.play.is-paused .prompt::before { content: "Pregunta oculta durante la pausa"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.9rem; }
+.play.is-paused #canvas { filter: blur(14px) brightness(0.5); }

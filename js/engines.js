@@ -225,7 +225,8 @@
       this.ui.finish({ completed, score: this.score, correct: this.correct, answered: this.answered, stars, missed: this.missed, lives: this.lives });
     }
     frame(ctx, dt) {
-      if (!this.blocking && !this.done) {
+      // En pausa o con una explicación abierta llega dt = 0: no se procesa nada (ni movimientos guardados).
+      if (!this.blocking && !this.done && dt > 0) {
         this.time += dt;
         this.update(dt);
       }

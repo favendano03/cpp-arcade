@@ -504,6 +504,7 @@
     explainCb = null;
     $("feedback").hidden = true;
     $("pause-menu").hidden = true;
+    $("screen-play").classList.remove("is-paused");
     Input.clear();
     $("hud-level").textContent = lv.title;
     $("pad-action").textContent = lv.engine === "shooter" ? "Disparar" : lv.engine === "sorter" ? "Soltar" : "·";
@@ -544,13 +545,15 @@
     if (!game || game.done || !$("intro").hidden) return;
     paused = on;
     $("pause-menu").hidden = !on;
+    // En pausa se ocultan la pregunta y el juego: pausar no sirve para pensar con calma.
+    $("screen-play").classList.toggle("is-paused", on);
     Input.clear();
   }
   $("btn-pause").addEventListener("click", () => setPause(!paused));
   $("btn-resume").addEventListener("click", () => setPause(false));
   $("btn-restart").addEventListener("click", () => startLevel(levelIdx));
   $("btn-quit").addEventListener("click", () => { stopGame(); renderHub(); });
-  function stopGame() { game = null; running = false; paused = false; explainCb = null; }
+  function stopGame() { game = null; running = false; paused = false; explainCb = null; $("screen-play").classList.remove("is-paused"); }
 
   function endLevel(res) {
     const lv = LEVELS[levelIdx];
@@ -590,6 +593,7 @@
     e.preventDefault();
     if (k === "action" && !$("intro").hidden) { if (!e.repeat) begin(); return; }
     if (e.repeat && k !== "action") return;
+    if (paused) return;                                   // en pausa no se mueve nada
     Input.set(k, true);
   });
   window.addEventListener("keyup", e => {
@@ -602,6 +606,7 @@
       e.preventDefault();
       if (explainCb) return; // la explicación se cierra solo con su botón
       if (k === "action" && !$("intro").hidden) { begin(); return; }
+      if (paused) return;
       btn.classList.add("held");
       Input.set(k, true);
     };
@@ -613,6 +618,7 @@
   });
   // tocar la mitad izquierda/derecha del canvas también mueve
   canvas.addEventListener("pointerdown", e => {
+    if (paused || explainCb) return;
     const r = canvas.getBoundingClientRect();
     const k = e.clientX - r.left < r.width / 2 ? "left" : "right";
     Input.set(k, true);
