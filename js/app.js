@@ -509,6 +509,9 @@
     $("hud-level").textContent = lv.title;
     $("pad-action").textContent = lv.engine === "shooter" ? "Disparar" : lv.engine === "sorter" ? "Soltar" : "·";
     $("pad-action").disabled = lv.engine === "runner";
+    // En la carrera el botón del medio se cambia por ▲ ▼ para avanzar y retroceder.
+    $("pad-action").hidden = lv.engine === "runner";
+    $("pad-vert").hidden = lv.engine !== "runner";
     ui.prompt({ ask: "Prepárate…", code: "" });
     game = new Engine(lv, data, ui);
     game.pushHud();

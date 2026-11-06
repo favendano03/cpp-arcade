@@ -19,8 +19,8 @@
 
   /* ---------------- Entrada (teclado + botones táctiles) ---------------- */
   const Input = {
-    held: { left: false, right: false, action: false },
-    pressed: { left: false, right: false, action: false },
+    held: { left: false, right: false, action: false, up: false, down: false },
+    pressed: { left: false, right: false, action: false, up: false, down: false },
     set(k, down) {
       if (down && !this.held[k]) this.pressed[k] = true;
       this.held[k] = down;
@@ -31,8 +31,12 @@
   const KEYMAP = {
     ArrowLeft: "left", KeyA: "left",
     ArrowRight: "right", KeyD: "right",
-    Space: "action", ArrowUp: "action", KeyW: "action", Enter: "action", ArrowDown: "action", KeyS: "action"
+    Space: "action", Enter: "action",
+    ArrowUp: "up", KeyW: "up", ArrowDown: "down", KeyS: "down"
   };
+  // ▲ ▼ solo mueven en la carrera; en los otros juegos funcionan como Acción (soltar o disparar).
+  const actionPressed = () => [Input.consume("action"), Input.consume("up"), Input.consume("down")].some(Boolean);
+  const actionHeld = () => Input.held.action || Input.held.up || Input.held.down;
 
   /* ---------------- Utilidades de dibujo ---------------- */
   function roundRect(ctx, x, y, w, h, r) {
@@ -310,7 +314,7 @@
       const c = this.cur;
       if (Input.consume("left")) { c.col = clamp(c.col - 1, 0, this.bins.length - 1); sfx("move"); }
       if (Input.consume("right")) { c.col = clamp(c.col + 1, 0, this.bins.length - 1); sfx("move"); }
-      if (Input.consume("action")) c.fast = true;
+      if (actionPressed()) c.fast = true;
       c.x = lerp(c.x, this.colX(c.col), Math.min(1, dt * 14));
       c.y += (c.fast ? 520 : c.speed) * dt;
       if (c.runners) {
@@ -532,7 +536,7 @@
       s.x = clamp(s.x, 20, W - 20);
       this.cool -= dt;
       this.invuln = Math.max(0, this.invuln - dt);
-      if ((Input.consume("action") || Input.held.action) && this.cool <= 0) {
+      if ((actionPressed() || actionHeld()) && this.cool <= 0) {
         this.bullets.push({ x: s.x, y: s.y - 16 });
         sfx("shoot");
         this.cool = 0.22;
@@ -759,6 +763,53 @@
   /* =====================================================================
      MOTOR 3 · CARRERA DE 3 CARRILES (Pista de ejecución)
      ===================================================================== */
+  const PY0 = H - 56, PY_MIN = 170;    // carrera: partida del jugador y lo más adelante que puede ir
+
+  // Bug que cruza la pista: caparazón partido, patas que se mueven y ojos que miran hacia donde va.
+  function drawBug(ctx, b) {
+    const dir = Math.sign(b.vx) || 1;
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(dir * 0.18);
+    ctx.strokeStyle = C.bad; ctx.lineWidth = 2; ctx.lineCap = "round";
+    for (let k = -1; k <= 1; k++) {                      // patas
+      const sw = Math.sin(b.ph + k * 2) * 3;
+      ctx.beginPath(); ctx.moveTo(-9, k * 6); ctx.lineTo(-18, k * 8 + sw); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(9, k * 6); ctx.lineTo(18, k * 8 - sw); ctx.stroke();
+    }
+    ctx.lineWidth = 1.5;                                  // antenas
+    ctx.beginPath(); ctx.moveTo(-3, -13); ctx.quadraticCurveTo(-6, -20, -10 + Math.sin(b.ph) * 1.5, -22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(3, -13); ctx.quadraticCurveTo(6, -20, 10 - Math.sin(b.ph) * 1.5, -22); ctx.stroke();
+    ctx.shadowColor = C.bad; ctx.shadowBlur = 10;
+    ctx.fillStyle = "#b8323d";                            // cabeza
+    ctx.beginPath(); ctx.arc(0, -11, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.bad;                                // caparazón
+    ctx.beginPath(); ctx.ellipse(0, 3, 11, 12, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "#7a1f28"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(0, 15); ctx.stroke();
+    ctx.fillStyle = "#7a1f28";
+    ctx.beginPath(); ctx.arc(-5, 2, 2, 0, Math.PI * 2); ctx.arc(5, 7, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff";                               // ojos
+    ctx.beginPath(); ctx.arc(-2.5, -12, 2, 0, Math.PI * 2); ctx.arc(2.5, -12, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.bg;
+    ctx.fillRect(-3 + dir, -12.5, 1.5, 1.5); ctx.fillRect(2 + dir, -12.5, 1.5, 1.5);
+    ctx.restore();
+  }
+  // Mini monito oscuro (sobre el bloque naranjo) girando sobre sí mismo.
+  function drawFlipper(ctx, x, y, a) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(a);
+    ctx.strokeStyle = "#221a29"; ctx.lineWidth = 1.6; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-3, 4); ctx.lineTo(-4, 8); ctx.moveTo(3, 4); ctx.lineTo(4, 8); ctx.stroke();
+    roundRect(ctx, -6, -5, 12, 10, 3);
+    ctx.fillStyle = "#221a29"; ctx.fill();
+    ctx.fillStyle = C.amber;
+    ctx.fillRect(-3.5, -2.5, 2, 2.5); ctx.fillRect(1.5, -2.5, 2, 2.5);
+    ctx.restore();
+  }
+
   class Runner extends BaseGame {
     constructor(level, data, ui) {
       super(level, data, ui);
@@ -766,7 +817,8 @@
       this.qi = -1;
       this.lane = 1;
       this.px = this.laneX(1);
-      this.py = H - 56;
+      this.py = PY0;
+      this.vy = 0;
       this.gate = null;
       this.bugs = [];
       this.scroll = 0;
@@ -776,9 +828,9 @@
     laneX(i) { return (W / 3) * (i + 0.5); }
     progress() { return this.answered / this.questions.length; }
     get speed() {
-      // tiempo de viaje de la compuerta: de ~10 s a ~6,5 s
+      // tiempo de viaje de la compuerta: de ~10 s a ~6,5 s (medido hasta la posición de partida del jugador)
       const dur = lerp(10, 6.5, Math.max(0, this.qi) / this.questions.length);
-      const base = (this.py + 60) / dur, trip = this.py + 200;   // una compuerta recorre ~py+200 px
+      const base = (PY0 + 60) / dur, trip = PY0 + 200;   // una compuerta recorre ~PY0+200 px
       return trip / (trip / base + THINK);
     }
     nextGate(y) {
@@ -787,24 +839,36 @@
       const q = this.questions[this.qi];
       this.gate = { q, y };
       this.ui.prompt({ ask: q.ask, code: q.code });
-      // algunos bugs entre compuertas
-      if (this.qi > 0 && Math.random() < 0.75) {
-        const l = Math.floor(Math.random() * 3);
-        this.bugs.push({ lane: l, y: -20 });
-        if (this.qi > 5 && Math.random() < 0.4) this.bugs.push({ lane: (l + 1 + Math.floor(Math.random() * 2)) % 3, y: -90 });
+      // bugs que cruzan de lado a lado entre compuertas (más rápidos a medida que avanza el nivel)
+      if (this.qi > 0 && Math.random() < 0.8) {
+        this.spawnBug(-20);
+        if (this.qi > 4 && Math.random() < 0.5) this.spawnBug(-110);
       }
+    }
+    spawnBug(y) {
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      this.bugs.push({ x: 30 + Math.random() * (W - 60), y, vx: dir * (45 + Math.random() * 35 + this.qi * 5), ph: Math.random() * 6 });
     }
     update(dt) {
       if (Input.consume("left")) { this.lane = clamp(this.lane - 1, 0, 2); sfx("move"); }
       if (Input.consume("right")) { this.lane = clamp(this.lane + 1, 0, 2); sfx("move"); }
-      Input.consume("action");
+      Input.consume("action"); Input.consume("up"); Input.consume("down");
       this.px = lerp(this.px, this.laneX(this.lane), Math.min(1, dt * 16));
+      // Adelante / atrás con ▲ ▼, con aceleración suave. No puede retroceder más allá de la partida.
+      const want = (Input.held.up ? -1 : 0) + (Input.held.down ? 1 : 0);
+      this.vy = lerp(this.vy, want * 210, Math.min(1, dt * 10));
+      this.py = clamp(this.py + this.vy * dt, PY_MIN, PY0);
+      if ((this.py === PY_MIN && this.vy < 0) || (this.py === PY0 && this.vy > 0)) this.vy = 0;
       this.invuln = Math.max(0, this.invuln - dt);
       const v = this.speed;
       this.scroll += v * dt;
       for (const b of this.bugs) {
         b.y += v * dt;
-        if (!b.dead && this.invuln <= 0 && b.lane === this.lane && Math.abs(b.y - this.py) < 22) {
+        b.x += b.vx * dt;
+        b.ph += dt * 14;
+        if (b.x < 18) { b.x = 18; b.vx = Math.abs(b.vx); }
+        if (b.x > W - 18) { b.x = W - 18; b.vx = -Math.abs(b.vx); }
+        if (!b.dead && this.invuln <= 0 && Math.abs(b.x - this.px) < 34 && Math.abs(b.y - this.py) < 24) {
           b.dead = true;
           this.invuln = 1;
           this.ui.toast(false, "¡Bug!", "Chocaste con un bug. −1 vida");
@@ -873,30 +937,21 @@
         ctx.fillText("if (respuesta == carril)", 10, g.y - 36);
       }
       // bugs
-      for (const b of this.bugs) {
-        const x = this.laneX(b.lane);
-        ctx.fillStyle = C.bad;
-        ctx.beginPath(); ctx.ellipse(x, b.y, 14, 11, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = C.bad; ctx.lineWidth = 2;
-        for (let k = -1; k <= 1; k++) {
-          ctx.beginPath(); ctx.moveTo(x - 12, b.y + k * 6); ctx.lineTo(x - 20, b.y + k * 8); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(x + 12, b.y + k * 6); ctx.lineTo(x + 20, b.y + k * 8); ctx.stroke();
-        }
-        ctx.fillStyle = C.bg;
-        ctx.fillRect(x - 6, b.y - 4, 3, 3); ctx.fillRect(x + 3, b.y - 4, 3, 3);
-      }
-      // jugador: el cursor de ejecución
+      for (const b of this.bugs) drawBug(ctx, b);
+      // jugador: bloque con dos monitos dando volteretas adentro
       if (!(this.invuln > 0 && Math.floor(this.time * 12) % 2)) {
         ctx.save();
         ctx.translate(this.px, this.py);
         ctx.shadowColor = C.amber; ctx.shadowBlur = 14;
         ctx.fillStyle = C.amber;
-        roundRect(ctx, -22, -14, 44, 28, 6); ctx.fill();
+        roundRect(ctx, -26, -16, 52, 32, 7); ctx.fill();
         ctx.shadowBlur = 0;
-        ctx.fillStyle = C.bg;
-        ctx.font = `400 14px ${DISPLAY}`;
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("PC", 0, 1);
+        ctx.clip();
+        [-1, 1].forEach((side, k) => {
+          const a = this.time * 5.5 + k * Math.PI;                 // giro de la voltereta
+          const hop = Math.abs(Math.sin(a / 2)) * 4;
+          drawFlipper(ctx, side * 11, 3 - hop, a * side);
+        });
         ctx.restore();
       }
     }

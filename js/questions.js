@@ -1652,7 +1652,7 @@
 
   const SHOOT = "◀ ▶ mover · Espacio/Acción disparar";
   const SORT = "◀ ▶ mover · Espacio/Acción soltar rápido";
-  const RUN = "◀ ▶ cambiar de carril";
+  const RUN = "◀ ▶ cambiar de carril · ▲ ▼ avanzar y retroceder";
   const STRUCT_LABELS = { pre: "PRE-\nPROCESADOR", comp: "COMPILADOR", link: "ENLAZADOR" };
 
   // Niveles de la campaña: cada uno sabe construir su partida y entregar preguntas para el jefe.

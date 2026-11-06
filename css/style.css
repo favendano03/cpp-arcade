@@ -343,6 +343,8 @@ canvas {
 }
 .btn.pad.action { color: var(--amber); font-size: 1rem; letter-spacing: 0.06em; text-transform: uppercase; }
 .btn.pad.held { background: var(--panel-2); border-color: var(--amber); }
+.pad-vert { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pad-vert[hidden], .btn.pad[hidden] { display: none; }
 
 /* ---------- Resultado y repaso ---------- */
 .result h2 { font-family: var(--font-display); font-weight: 400; color: var(--amber); font-size: 1.7rem; }

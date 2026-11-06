@@ -62,7 +62,7 @@ Los niveles normales están siempre abiertos, para estudiar el tema que quieras.
 
 ## Controles
 
-- **Teclado**: `◀ ▶` o `A`/`D` para moverte, `Espacio` para soltar o disparar, `Enter` para cerrar una explicación, `Esc` o `P` para pausar, `M` para el sonido.
+- **Teclado**: `◀ ▶` o `A`/`D` para moverte, `▲ ▼` o `W`/`S` para avanzar y retroceder en la carrera, `Espacio` para soltar o disparar, `Enter` para cerrar una explicación, `Esc` o `P` para pausar, `M` para el sonido.
 - **Celular**: botones en pantalla debajo del juego, y el parlante arriba a la derecha para el sonido.
 
 ## Tu avance
