@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap">
-<link rel="stylesheet" href="css/style.css?v=20261110a">
+<link rel="stylesheet" href="css/style.css?v=20261111b">
 </head>
 <body>
 <div id="app">
@@ -176,8 +176,8 @@
       <button id="mode-arcade" class="mode-card alt" type="button">
         <span class="mode-tag">Modo 2</span>
         <span class="mode-name">Arcade</span>
-        <span class="mode-desc">Casos cortos y rápidos para jugar sin parar.</span>
-        <span class="mode-meta soon-chip">Coming soon</span>
+        <span class="mode-desc">La taberna: un trader desesperado te pide ayuda con su programa en C++. Bonos, forwards y acciones.</span>
+        <span class="mode-meta" id="mode-arcade-meta"></span>
       </button>
     </div>
 
@@ -304,6 +304,89 @@
     </div>
   </section>
 
+  <!-- ============ ARCADE: LA TABERNA ============ -->
+  <section id="screen-arcade" class="screen arcade" hidden>
+    <div class="arc-head">
+      <button id="arc-back" class="btn ghost" type="button">← Volver</button>
+      <span class="arc-crumb" id="arc-crumb">Arcade · La taberna</span>
+      <button id="arc-skip" class="btn ghost arc-skip" type="button" hidden>Saltar escena ⏭</button>
+    </div>
+    <div class="arc-frame" id="arc-frame">
+      <canvas id="arc-canvas" width="320" height="180" aria-label="La taberna"></canvas>
+      <div class="arc-flash" id="arc-flash"></div>
+    </div>
+    <div class="arc-dialog" id="arc-dialog" hidden>
+      <p class="arc-who" id="arc-who"></p>
+      <p class="arc-line" id="arc-line"></p>
+      <div class="arc-choices" id="arc-choices"></div>
+      <span class="arc-next" id="arc-next" hidden>Seguir <kbd>Enter</kbd></span>
+    </div>
+
+    <div id="arc-menu" class="arc-menu">
+      <p class="view-title">Elige la dificultad</p>
+      <p class="muted arc-intro">Un trader cansado llega a la taberna con un programa en C++ a medio escribir. Un caso por partida, al azar: comprar o vender un bono, construir un forward o valorar una acción. Si te equivocas más de la cuenta, lo despiden.</p>
+      <div class="arc-diffs">
+        <button class="mode-card arc-diff" data-arc-diff="facil" type="button">
+          <span class="mode-tag">6 pasos · 3 errores de margen</span>
+          <span class="mode-name small">Fácil</span>
+          <span class="mode-desc">Un flujo y fórmulas directas: variables, operadores, cout e if.</span>
+          <span class="mode-meta" id="arc-rec-facil"></span>
+        </button>
+        <button class="mode-card alt arc-diff" data-arc-diff="intermedio" type="button">
+          <span class="mode-tag">7 pasos · 2 errores de margen</span>
+          <span class="mode-name small">Intermedio</span>
+          <span class="mode-desc">Cupones en un for, funciones con parámetros y decisiones de compra o venta.</span>
+          <span class="mode-meta" id="arc-rec-intermedio"></span>
+        </button>
+        <button class="mode-card arc-diff legend" data-arc-diff="leyenda" type="button">
+          <span class="mode-tag">8 pasos · 2 errores · 45 s por paso</span>
+          <span class="mode-name small">Leyenda</span>
+          <span class="mode-desc">Arreglos, punteros, memoria dinámica y errores sutiles, con el reloj encima.</span>
+          <span class="mode-meta" id="arc-rec-leyenda"></span>
+        </button>
+      </div>
+    </div>
+
+    <div id="arc-pc" class="arc-pc" hidden>
+      <div class="pc-bar">
+        <span class="pc-dots"><i></i><i></i><i></i></span>
+        <span class="pc-title" id="pc-title">trader.cpp</span>
+        <span class="pc-stat" id="pc-clock" hidden></span>
+        <span class="pc-stat" id="pc-strikes"></span>
+      </div>
+      <div class="pc-body">
+        <div class="pc-trader"><canvas id="pc-face" width="40" height="40" aria-hidden="true"></canvas><p class="pc-quip" id="pc-quip"></p></div>
+        <p class="pc-step" id="pc-step"></p>
+        <p class="pc-ask" id="pc-ask"></p>
+        <pre class="pc-code" id="pc-code"></pre>
+        <div class="pc-opts" id="pc-opts"></div>
+        <div class="pc-fb" id="pc-fb" hidden>
+          <p class="pc-fb-title" id="pc-fb-title"></p>
+          <p class="pc-fb-text" id="pc-fb-text"></p>
+          <button id="pc-next" class="btn primary" type="button">Siguiente paso <kbd>Enter</kbd></button>
+        </div>
+        <p class="pc-help">Responde con 1–4 o tocando la alternativa.</p>
+      </div>
+    </div>
+
+    <div id="arc-result" class="panel result" hidden>
+      <p class="eyebrow" id="arc-res-eyebrow"></p>
+      <h2 id="arc-res-title"></h2>
+      <p class="muted" id="arc-res-text"></p>
+      <div class="res-stars" id="arc-res-stars"></div>
+      <div class="res-grid">
+        <div><span class="stat-label">Puntos</span><span class="stat-val" id="arc-res-score"></span></div>
+        <div><span class="stat-label">Aciertos</span><span class="stat-val" id="arc-res-acc"></span></div>
+        <div><span class="stat-label">Récord</span><span class="stat-val" id="arc-res-best"></span></div>
+      </div>
+      <div class="row">
+        <button id="arc-again" class="btn primary" type="button">Otro caso</button>
+        <button id="arc-levels" class="btn secondary" type="button">Cambiar dificultad</button>
+        <button id="arc-hub" class="btn ghost" type="button">Volver al menú</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ REPASO ============ -->
   <section id="screen-review" class="screen" hidden>
     <div class="panel">
@@ -324,11 +407,13 @@
 <script src="js/questions.js?v=20261110a"></script>
 <script src="js/engines.js?v=20261110a"></script>
 <script src="js/memory.js?v=20261111a"></script>
+<script src="js/arcade-cases.js?v=20261111a"></script>
+<script src="js/arcade.js?v=20261111a"></script>
 <script src="js/sound.js?v=20261110a"></script>
 <script src="js/firebase-config.js?v=20261110a"></script>
 <script src="js/cloud.js?v=20261110a"></script>
 <script src="js/bg.js?v=20261110a"></script>
-<script src="js/app.js?v=20261111a"></script>
+<script src="js/app.js?v=20261111c"></script>
 <script src="js/egg.js?v=20261110a"></script>
 <script src="js/audio-test.js?v=20261110a"></script>
 </body>

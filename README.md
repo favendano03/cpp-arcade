@@ -21,7 +21,7 @@ Nació como herramienta de estudio para el curso *Programación en Finanzas* (C+
 - **Campaña**: dos secciones, cada una con un jefe al final de cada bloque y un jefe final.
   - **Estructuras y Funciones**: 16 niveles en 4 bloques.
   - **Gestión de memoria**: 16 niveles en 5 bloques (punteros, arreglos y aritmética, punteros especiales, new/delete y malloc/free, y el bono).
-- **Arcade**: casos cortos y rápidos. Próximamente.
+- **Arcade**: en la taberna El Heap, un trader cansado te pide ayuda con un caso (compra o venta de un bono, un forward o valorar la acción de una empresa ficticia). Resuelves en su computador preguntas de C++ aplicado: predecir la salida, completar la línea que falta o encontrar el bug. Tres dificultades (fácil, intermedio y leyenda, con reloj) y dos finales: lo ascienden o lo despiden.
 
 Hay tres mecánicas:
 
@@ -83,6 +83,8 @@ index.html             pantallas (inicio, modos, juego, resultado, repaso)
 css/style.css          estilos
 js/questions.js        contenido de los niveles y generadores de preguntas (sección 1)
 js/memory.js           niveles de la sección 2, Gestión de memoria
+js/arcade-cases.js     casos y preguntas del modo Arcade, por dificultad y tema
+js/arcade.js           modo Arcade: escena de la taberna, computador del trader y finales
 js/engines.js          motores de juego (clasificador, disparos, carrera, jefes)
 js/app.js              navegación entre pantallas y controles
 js/storage.js          perfiles locales, exportar e importar
@@ -95,11 +97,11 @@ js/audio-test.js       prueba de sonido (se abre con cpparcade.cl/#audio)
 firestore.rules        reglas de seguridad de la base de datos
 ```
 
-Para correrlo en tu computador basta un servidor estático, por ejemplo `python3 -m http.server` en esta carpeta, y abrir `http://localhost:8000`. Para agregar preguntas, edita `js/questions.js` (sección 1) o `js/memory.js` (sección 2).
+Para correrlo en tu computador basta un servidor estático, por ejemplo `python3 -m http.server` en esta carpeta, y abrir `http://localhost:8000`. Para agregar preguntas, edita `js/questions.js` (sección 1) o `js/memory.js` (sección 2); para el Arcade, `js/arcade-cases.js`.
 
 ## In English
 
-**C++ Arcade** is a browser arcade game for learning C++ *concepts* (compilation stages, types and ranges, pass by value vs. reference, recursion, arrays) rather than syntax drills. A campaign of 16 levels and 4 bosses uses three mechanics (sort, shoot, lane runner), and every answer comes with a short explanation. Built with vanilla JavaScript and Canvas 2D, synthesized Web Audio sound effects, and Firebase Authentication + Firestore for cross-device progress. Play it at **[cpparcade.cl](https://cpparcade.cl)** (Spanish).
+**C++ Arcade** is a browser arcade game for learning C++ *concepts* (compilation stages, types and ranges, pass by value vs. reference, recursion, arrays) rather than syntax drills. A campaign of 16 levels and 4 bosses uses three mechanics (sort, shoot, lane runner), and every answer comes with a short explanation. An Arcade mode sets applied C++ questions (predict the output, fill the missing line, spot the bug) inside a pixel-art tavern where a tired trader needs help pricing a bond, a forward or a made-up stock. Built with vanilla JavaScript and Canvas 2D, synthesized Web Audio sound effects, and Firebase Authentication + Firestore for cross-device progress. Play it at **[cpparcade.cl](https://cpparcade.cl)** (Spanish).
 
 ## Licencia
 

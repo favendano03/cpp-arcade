@@ -49,11 +49,11 @@
   }
 
   /* ---------------- Pantallas ---------------- */
-  const screens = ["login", "hub", "play", "result", "review"];
+  const screens = ["login", "hub", "play", "result", "review", "arcade"];
   function show(name) {
     screens.forEach(s => { $("screen-" + s).hidden = s !== name; });
     $("btn-sound").hidden = name === "play" || !window.SFX;
-    $("gh-link").hidden = name === "play";
+    $("gh-link").hidden = name === "play" || name === "arcade";
     if (window.FightBG) { if (name === "login") FightBG.start(); else FightBG.stop(); }
     window.scrollTo(0, 0);
   }
@@ -283,7 +283,7 @@
   $("mode-campaign").addEventListener("click", () => setHubView("campaign"));
   $("sec-estructuras").addEventListener("click", () => { hubSection = "estructuras"; setHubView("levels"); });
   $("sec-memoria").addEventListener("click", () => { hubSection = "memoria"; setHubView("levels"); });
-  $("mode-arcade").addEventListener("click", () => showSoon("Modo Arcade", "Casos cortos y más dinámicos. Este modo está en construcción."));
+  $("mode-arcade").addEventListener("click", () => { show("arcade"); window.Arcade.open(profile, renderHub); });
 
   function renderHub() {
     $("hub-name").textContent = profile.name;
@@ -300,6 +300,8 @@
     };
     $("sec-estructuras-meta").textContent = secMeta("estructuras");
     $("sec-memoria-meta").textContent = secMeta("memoria");
+    const arcRec = ["facil", "intermedio", "leyenda"].map(d => profile.levels["arcade-" + d]).filter(Boolean);
+    $("mode-arcade-meta").textContent = arcRec.length ? `${arcRec.reduce((a, r) => a + (r.plays || 0), 0)} partidas · ${arcRec.filter(r => r.done).length}/3 dificultades superadas` : "Nuevo: la taberna del trader";
     $("view-modes").hidden = hubView !== "modes";
     $("view-campaign").hidden = hubView !== "campaign";
     $("level-list").hidden = hubView !== "levels";
