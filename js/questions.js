@@ -15,6 +15,28 @@
     return a;
   }
   const hex = n => "0x" + n.toString(16);
+  // Un double tal como lo muestra cout por defecto (6 cifras significativas).
+  const cout6 = x => String(+x.toPrecision(6));
+  // Nombres de variables al azar, para que el mismo caso no se vea siempre igual.
+  const VAR_NAMES = ["a", "b", "c", "x", "y", "z", "n", "m", "k", "p", "q", "r", "t", "v", "w"];
+  const vars = k => shuffle(VAR_NAMES).slice(0, k);
+
+  /* Casos vistos hace poco (por nivel, en este navegador). Cada partida parte por los tipos de caso
+     que no salieron en las últimas partidas, así repetir un nivel trae casos distintos y no se
+     responde de memoria. Si el navegador no guarda datos, simplemente se elige al azar. */
+  const SEEN_KEY = "cpparcade-seen";
+  function freshIdx(key, total, n) {
+    let seen = {};
+    try { seen = JSON.parse(localStorage.getItem(SEEN_KEY)) || {}; } catch (e) { seen = {}; }
+    const recent = (key && Array.isArray(seen[key]) ? seen[key] : []).filter(i => i < total);   // el más antiguo primero
+    const unseen = shuffle([...Array(total).keys()].filter(i => !recent.includes(i)));
+    const chosen = unseen.concat(recent).slice(0, Math.min(n, total));
+    if (key) {
+      seen[key] = recent.filter(i => !chosen.includes(i)).concat(chosen);
+      try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) { /* sin almacenamiento */ }
+    }
+    return shuffle(chosen);
+  }
 
   // Arma una pregunta de alternativas: la correcta + distractores distintos entre sí.
   function mkQ(ask, code, correct, distractors, explain, n) {
@@ -822,16 +844,16 @@
   }
 
   function fromGens(gens, n) {
-    // Mezcla los generadores para no repetir el mismo tipo seguido
-    const order = shuffle(gens);
+    // Elige los tipos de caso que no salieron hace poco y los mezcla para no repetir el mismo tipo seguido.
+    const idx = freshIdx(gens.key, gens.length, n);
     const out = [];
-    for (let i = 0; i < n; i++) out.push(order[i % order.length]());
+    for (let i = 0; i < n; i++) out.push(gens[idx[i % idx.length]]());
     return out;
   }
   // Para clasificadores donde el código está en el panel: el bloque que cae va sin texto (anon),
   // así no delata la respuesta; lleva monitos corriendo adentro.
   function cases(items, n, ask) {
-    return shuffle(items).slice(0, n).map((it, i) => Object.assign({ label: `caso #${i + 1}`, anon: true, ask }, it));
+    return freshIdx(items.key, items.length, n).map((k, i) => Object.assign({ label: `caso #${i + 1}`, anon: true, ask }, items[k]));
   }
 
   /* #####################################################################
@@ -867,7 +889,31 @@
     { code: "// a.cpp y b.cpp definen los dos:\nint square(int x) { return x * x; }", ask: "¿Quién reclama por este error?", bin: "link",
       explain: "Cada función se define en un solo `.cpp`. Dos definiciones chocan al enlazar (\"multiple definition\")." },
     { code: "programa.o + biblioteca estándar  →  ./programa", ask: "¿Quién une el código objeto en un ejecutable?", bin: "link",
-      explain: "El enlazador (linker) junta los `.o` y las bibliotecas en el ejecutable final." }
+      explain: "El enlazador (linker) junta los `.o` y las bibliotecas en el ejecutable final." },
+    { code: "#include \"calculations.h\"", ask: "¿Quién procesa esta línea?", bin: "pre",
+      explain: "Con comillas o con `< >`, `#include` es una directiva: el preprocesador pega ahí el contenido del archivo." },
+    { code: "#ifdef DEBUG\n  cout << \"x = \" << x;\n#endif", ask: "¿Quién decide si el `cout` queda en el programa?", bin: "pre",
+      explain: "`#ifdef` es compilación condicional: el preprocesador deja o borra esas líneas antes de que el compilador las vea." },
+    { code: "#define MAX(a, b) ((a) > (b) ? (a) : (b))", ask: "¿Quién expande esta macro?", bin: "pre",
+      explain: "Una macro con parámetros sigue siendo reemplazo de texto, y lo hace el preprocesador." },
+    { code: "#undef PI", ask: "¿Quién procesa esta línea?", bin: "pre",
+      explain: "Empieza con `#`: es una directiva. `#undef` borra una macro definida antes." },
+    { code: "int x = \"hola\";", ask: "¿Quién reclama por este error?", bin: "comp",
+      explain: "Tipos incompatibles: una cadena no se puede guardar en un `int`. Lo detecta el compilador." },
+    { code: "if (x > 0 {\n  cout << x;\n}", ask: "¿Quién reclama por este error?", bin: "comp",
+      explain: "Falta un paréntesis: es un error de sintaxis, y los detecta el compilador." },
+    { code: "int main() {\n  return 0\n}", ask: "¿Quién reclama por este error?", bin: "comp",
+      explain: "Falta el `;` después de `return 0`. Error de sintaxis: compilador." },
+    { code: "double r = sqrt(2.0);   // sin #include <cmath>", ask: "¿Quién reclama por este error?", bin: "comp",
+      explain: "Sin el header, el compilador no conoce `sqrt` (\"was not declared in this scope\")." },
+    { code: "int v[3] = {1, 2, 3, 4};", ask: "¿Quién reclama por este error?", bin: "comp",
+      explain: "Más valores que espacios en el arreglo: el compilador lo rechaza." },
+    { code: "// main.cpp y test.cpp tienen los dos:\nint main() { ... }", ask: "¿Quién reclama al armar el programa con los dos archivos?", bin: "link",
+      explain: "Cada archivo compila bien por separado, pero al unirlos hay dos `main`: \"multiple definition of main\", error del enlazador." },
+    { code: "// calc.h:   double tax(double x);\n// calc.cpp: double tax(double x, double r) { ... }\nint main() { return tax(5.0); }", ask: "¿Quién reclama por este error?", bin: "link",
+      explain: "`main` compila gracias al prototipo de un parámetro, pero la única definición tiene dos parámetros: es otra función. Al enlazar falta `tax(double)`: \"undefined reference\"." },
+    { code: "// calc.cpp no tiene main\ng++ calc.cpp -o programa", ask: "¿Quién reclama por este error?", bin: "link",
+      explain: "Compilar calc.cpp funciona, pero un ejecutable necesita `main`. Al armarlo, el enlazador reclama \"undefined reference to main\"." }
   ];
 
   /* ---------- 2 · Variables y ámbito (carrera) ---------- */
@@ -937,6 +983,93 @@
       return mkQ("¿Qué imprime?", "int x = 1;          // global\nvoid f() { x = 5; }\n\nint main() {\n  f();\n  cout << x;\n}",
         5, [1, "No compila"],
         "`x` es global: `f` modifica esa misma variable, así que `main` ve 5.", 3);
+    },
+    function () {
+      const [p, q] = vars(2), a = rnd(2, 9), b = rnd(11, 19), which = pick([p, q]);
+      return mkQ(`¿Cuánto vale \`${which}\` al final?`, `int ${p} = ${a}, ${q} = ${b};\nint aux = ${p};\n${p} = ${q};\n${q} = aux;`,
+        which === p ? b : a, [which === p ? a : b, "indeterminado"],
+        `Es un intercambio con variable auxiliar: \`aux\` guarda ${a}, luego ${p} = ${b} y ${q} = ${a}.`, 3);
+    },
+    function () {
+      const [v] = vars(1), a = rnd(1, 9), b = rnd(10, 30);
+      return mkQ("¿Qué imprime?", `int ${v} = ${a};\n{\n  int ${v} = ${b};\n  cout << ${v};\n}\ncout << ${v};`,
+        `${b}${a}`, [`${b}${b}`, "No compila"],
+        `Dentro del bloque se declara otra \`${v}\` que tapa a la de afuera (imprime ${b}). Al salir del bloque vuelve a verse la de afuera (${a}).`, 3);
+    },
+    function () {
+      const [v] = vars(1), a = rnd(1, 9), b = rnd(10, 30);
+      return mkQ("¿Qué imprime?", `int ${v} = ${a};\n{\n  int ${v} = ${b};\n  ${v} = ${v} + 1;\n}\ncout << ${v};`,
+        a, [b + 1, a + 1],
+        `El \`${v}\` que se modifica es el del bloque interior (una variable distinta). El de afuera sigue en ${a}.`, 3);
+    },
+    function () {
+      const [v] = vars(1), a = rnd(1, 9), b = rnd(10, 30);
+      return mkQ("¿Qué pasa?", `int ${v} = ${a};\nint ${v} = ${b};\ncout << ${v};`,
+        "No compila", [a, b],
+        `No se puede declarar dos veces el mismo nombre en el mismo ámbito. Para cambiar el valor se asigna: \`${v} = ${b};\`.`, 3);
+    },
+    function () {
+      const [v] = vars(1), a = rnd(2, 9), m = rnd(2, 4), s = rnd(1, 5);
+      return mkQ(`¿Cuánto vale \`${v}\`?`, `int ${v} = ${a};\n${v} = ${v} * ${m} + ${s};`,
+        a * m + s, [a, a * (m + s)],
+        `El lado derecho usa el valor actual: ${a}·${m} + ${s} = ${a * m + s}, y eso se guarda en \`${v}\`.`, 3);
+    },
+    function () {
+      const n = rnd(3, 8);
+      return mkQ("¿Qué pasa?", `for (int i = 0; i < ${n}; i++) {\n  // ...\n}\ncout << i;`,
+        "No compila", [n, n - 1],
+        "Una variable declarada en el `for` solo existe dentro del ciclo. Afuera, `i` no está declarada.", 3);
+    },
+    function () {
+      const [p, q] = vars(2), b = rnd(2, 9);
+      return mkQ(`¿Cuánto vale \`${p}\`?`, `int main() {\n  int ${p}, ${q} = ${b};\n}`,
+        "indeterminado", [b, 0],
+        `\`= ${b}\` solo inicializa a \`${q}\`. \`${p}\` es local y queda sin inicializar: su valor es indeterminado.`, 3);
+    },
+    function () {
+      const v = vars(1)[0], k = rnd(2, 9), bad = pick([true, false]);
+      return bad
+        ? mkQ("¿Qué pasa?", `int ${v}{${k}.5};`, "No compila", [k, k + 1],
+          `Las llaves no aceptan conversiones que pierden información: un \`double\` como ${k}.5 no entra a un \`int\` así. Con \`= ${k}.5\` sí compila (y queda ${k}).`, 3)
+        : mkQ("¿Qué imprime?", `int ${v}{${k}};\ncout << ${v};`, k, ["No compila", 0],
+          `\`int ${v}{${k}}\` es inicialización con llaves: equivale a \`int ${v} = ${k}\`.`, 3);
+    },
+    function () {
+      const good = pick(["_total", "result_2", "tasaAnual", "precio_final", "x1", "TasaUSD"]);
+      const bad = shuffle(["2result", "tasa anual", "int", "precio-final", "for", "mi%"]).slice(0, 2);
+      return mkQ("¿Cuál identificador es VÁLIDO?", "", good, bad,
+        `\`${good}\` usa solo letras, dígitos y \`_\`, y no empieza con dígito. Además no es una palabra clave.`, 3);
+    },
+    function () {
+      const name = pick(["valor", "total", "saldo", "precio"]), a = rnd(2, 9), b = rnd(10, 30);
+      const Cap = name[0].toUpperCase() + name.slice(1);
+      return mkQ("¿Qué pasa?", `int ${name} = ${a};\n${Cap} = ${b};\ncout << ${name};`,
+        "No compila", [a, b],
+        `C++ distingue mayúsculas: \`${Cap}\` es otro nombre, y nunca se declaró.`, 3);
+    },
+    function () {
+      const [v] = vars(1), a = rnd(1, 9), b = rnd(10, 30);
+      return mkQ("¿Qué imprime?", `int ${v} = ${a};   // global\n\nint main() {\n  int ${v} = ${b};\n  cout << ${v};\n}`,
+        b, [a, "No compila"],
+        `La variable local tapa a la global con el mismo nombre: dentro de \`main\` se usa la local (${b}).`, 3);
+    },
+    function () {
+      const [p, q] = vars(2), a = rnd(2, 9), b = rnd(10, 19), which = pick([p, q]);
+      return mkQ(`¿Cuánto vale \`${which}\` al final?`, `int ${p} = ${a}, ${q} = ${b};\n${p} = ${p} + ${q};\n${q} = ${p} - ${q};\n${p} = ${p} - ${q};`,
+        which === p ? b : a, [which === p ? a : b, a + b],
+        `Traza: ${p} = ${a + b}; ${q} = ${a + b} − ${b} = ${a}; ${p} = ${a + b} − ${a} = ${b}. Intercambia los valores sin variable auxiliar.`, 3);
+    },
+    function () {
+      const [v] = vars(1), k = rnd(2, 9);
+      return mkQ("¿Qué pasa?", `cout << ${v};\nint ${v} = ${k};`,
+        "No compila", [k, "indeterminado"],
+        "El compilador lee de arriba hacia abajo: una variable se puede usar recién después de declararla.", 3);
+    },
+    function () {
+      const [v] = vars(1), a = rnd(1, 9), b = rnd(2, 9), c = rnd(10, 30);
+      return mkQ("¿Qué imprime?", `int ${v} = ${a};\n{\n  ${v} = ${v} + ${b};\n  int ${v} = ${c};\n}\ncout << ${v};`,
+        a + b, [a, c],
+        `La primera línea del bloque todavía usa la \`${v}\` de afuera (la interior se declara después): queda en ${a + b}. La \`${v}\` interior desaparece al cerrar el bloque.`, 3);
     }
   ];
 
@@ -1002,6 +1135,77 @@
       return mkQ(`Dispara al valor de \`${e[0]}\``, `double v = ${e[0]};`,
         e[1], wrong,
         "`e` significa ×10 elevado a lo que sigue. Exponente negativo mueve la coma a la izquierda.");
+    },
+    function () {
+      const v = rnd(250, 255), add = rnd(2, 12), r = (v + add) % 256;
+      return mkQ("Dispara al valor final de `c`", `unsigned char c = ${v};\nc = c + ${add};`,
+        r, [v + add, 255, -1 * r || 256],
+        `Un \`unsigned char\` va de 0 a 255. Al pasarse, da la vuelta: (${v} + ${add}) − 256 = ${r}.`);
+    },
+    function () {
+      return mkQ("Dispara al valor final de `u` (32 bits)", "unsigned int u = 0;\nu = u - 1;",
+        "4294967295", ["-1", "0", "4294967296"],
+        "Un `unsigned` no puede ser negativo: 0 − 1 da la vuelta al máximo, 2³² − 1 = 4294967295.");
+    },
+    function () {
+      const n = rnd(26, 255), h = n.toString(16).toUpperCase();
+      return mkQ(`Dispara al literal hexadecimal que vale ${n}`, "",
+        `0x${h}`, [`0x${n}`, `0x${(n + 16).toString(16).toUpperCase()}`, `0x${(n - 1).toString(16).toUpperCase()}`],
+        `${n} = ${Math.floor(n / 16)}·16 + ${n % 16}, o sea ${h} en base 16.`);
+    },
+    function () {
+      const n = rnd(5, 31), b = n.toString(2);
+      return mkQ("Dispara al valor de `x` (en decimal)", `int x = 0b${b};`,
+        n, [Number(b) > 1000 ? n + 2 : Number(b), n * 2, n - 1],
+        `\`0b\` indica base 2 (desde C++14): ${b.split("").map((d, i, a) => d === "1" ? 2 ** (a.length - 1 - i) : null).filter(x => x !== null).join(" + ")} = ${n}.`);
+    },
+    function () {
+      const d = pick(["09", "08", "019", "0128"]);
+      return mkQ("Dispara: ¿qué pasa?", `int x = ${d};`,
+        "No compila", [String(Number(d)), "0", String(parseInt(d.replace(/[89]/g, "7"), 8))],
+        `El 0 inicial pide un literal octal, y en base 8 no existen los dígitos 8 ni 9.`);
+    },
+    function () {
+      const n = rnd(3, 12), t = pick([["int", 4], ["double", 8], ["char", 1], ["short", 2]]);
+      return mkQ("Dispara al valor de `sizeof(v)`", `${t[0]} v[${n}];   // sizeof(${t[0]}) == ${t[1]}`,
+        n * t[1], [n, t[1], n * t[1] + t[1]],
+        `\`sizeof\` de un arreglo mide el arreglo completo: ${n} elementos × ${t[1]} bytes = ${n * t[1]}.`);
+    },
+    function () {
+      const l = pick([["75UL", "unsigned long", "U = unsigned y L = long."], ["3.5L", "long double", "Un literal de punto flotante con L es `long double`."],
+        ["0x1F", "int", "Hexadecimal sin sufijo sigue siendo `int`: la base no cambia el tipo."], ["'7'", "char", "Comillas simples: es un carácter, no el número 7."],
+        ["7.0", "double", "Tiene punto: es de punto flotante, y sin sufijo es `double`."], ["2.5f", "float", "El sufijo f (o F) lo hace `float`."]]);
+      return mkQ(`Dispara al tipo del literal \`${l[0]}\``, "",
+        l[1], ["int", "double", "float", "char", "long double", "unsigned long"].filter(x => x !== l[1]), l[2]);
+    },
+    function () {
+      const w = rnd(2, 9), f = pick([".2", ".5", ".75", ".9", ".99"]), neg = pick([false, false, true]);
+      const lit = (neg ? "-" : "") + w + f;
+      return mkQ("Dispara al valor de `x`", `int x = ${lit};`,
+        neg ? -w : w, [neg ? -(w + 1) : w + 1, "No compila", lit],
+        `Al guardar un \`double\` en un \`int\` se descartan los decimales (se trunca hacia el cero): queda ${neg ? -w : w}. No se redondea.`);
+    },
+    function () {
+      const k = pick([0, 5, -3, 42, 2]);
+      return mkQ("Dispara a lo que imprime", `bool b = ${k};\ncout << b;`,
+        k !== 0 ? 1 : 0, [k !== 0 ? 0 : 1, "true", String(k) === "1" || String(k) === "0" ? "false" : String(k)],
+        `Al convertir un número a \`bool\`, 0 es falso y cualquier otro valor es verdadero. \`cout\` muestra los \`bool\` como 1 o 0.`);
+    },
+    function () {
+      const n = pick([4, 8, 16]);
+      return mkQ(`Dispara a cuántos valores distintos caben en ${n} bits`, "",
+        2 ** n, [2 ** n - 1, 2 * n, 2 ** (n - 1)],
+        `Cada bit duplica las combinaciones: 2^${n} = ${2 ** n}. Sin signo van de 0 a ${2 ** n - 1}.`);
+    },
+    function () {
+      return mkQ("Dispara al máximo de un `int` de 32 bits", "",
+        "2147483647", ["4294967295", "2147483648", "32767"],
+        "Con signo y 32 bits: de −2³¹ a 2³¹ − 1 = 2147483647. 4294967295 es el máximo sin signo.");
+    },
+    function () {
+      return mkQ("Dispara al valor final de `s` (16 bits)", "short s = 32767;\ns = s + 1;",
+        "-32768", ["32768", "0", "32767"],
+        "32767 es el máximo de un `short`. El resultado no cabe y da la vuelta al mínimo, −32768 (desbordamiento).");
     }
   ];
 
@@ -1070,6 +1274,84 @@
       return mkQ("¿Cuál se prefiere en C++ para una constante?", "const double pi = 3.14159;\n#define PI 3.14159",
         "const", ["#define", "Da lo mismo"],
         "`const` tiene tipo, respeta el ámbito y lo verifica el compilador. `#define` es solo reemplazo de texto.", 3);
+    },
+    function () {
+      const k = rnd(1, 6), ch = String.fromCharCode(65 + k);
+      return mkQ("¿Qué imprime?", `char c = 'A' + ${k};\ncout << c;`,
+        ch, [65 + k, `A${k}`],
+        `Un \`char\` guarda un código: 'A' es 65, más ${k} da ${65 + k}, que es '${ch}'. Como \`c\` es \`char\`, se imprime la letra.`, 3);
+    },
+    function () {
+      const l = pick("bcdefghmrtz".split("")), U = l.toUpperCase();
+      return mkQ("¿Qué imprime?", `char c = '${l}';\nc = c - 32;\ncout << c;`,
+        U, [l.charCodeAt(0) - 32, l],
+        `En ASCII cada minúscula está 32 lugares después de su mayúscula: '${l}' − 32 = '${U}'.`, 3);
+    },
+    function () {
+      const k = rnd(1, 3), l = String.fromCharCode(65 + k);
+      return mkQ("¿Qué imprime?", `cout << 'A' + ${k};`,
+        65 + k, [l, `A${k}`],
+        `Sumar un número a un \`char\` da un \`int\`: 65 + ${k} = ${65 + k}. Se imprime el número, no la letra (para eso hay que guardarlo en un \`char\`).`, 3);
+    },
+    function () {
+      const w = pick(["hola", "bono", "swap", "C++", "tasa", "Chile"]);
+      return mkQ("¿Qué imprime?", `string s = "${w}";\ncout << s.length();`,
+        w.length, [w.length + 1, w],
+        `\`length()\` (o \`size()\`) cuenta los caracteres: "${w}" tiene ${w.length}. Un \`std::string\` no cuenta un '\\0' final.`, 3);
+    },
+    function () {
+      const [a, b] = pick([["a", "b"], ["si", "no"], ["ok", "fin"]]);
+      return mkQ("¿Qué imprime?", `string s = "${a}\\n${b}";\ncout << s.size();`,
+        a.length + b.length + 1, [a.length + b.length + 2, a.length + b.length],
+        `\`\\n\` se escribe con dos símbolos, pero es UN solo carácter (el salto de línea): ${a.length} + 1 + ${b.length} = ${a.length + b.length + 1}.`, 3);
+    },
+    function () {
+      const w = pick(["Hola", "OK", "C++"]);
+      return mkQ("¿Qué imprime?", `cout << "\\"${w}\\"";`,
+        `"${w}"`, [`\\"${w}\\"`, "No compila"],
+        "`\\\"` es la secuencia de escape para poner comillas dobles dentro de una cadena: se imprimen las comillas.", 3);
+    },
+    function () {
+      const d = pick(["temp", "datos", "C++"]);
+      return mkQ("¿Qué imprime?", `cout << "C:\\\\${d}";`,
+        `C:\\${d}`, [`C:\\\\${d}`, `C:${d}`],
+        "`\\\\` es la secuencia de escape de una barra invertida: se imprime una sola.", 3);
+    },
+    function () {
+      const [a, b] = pick([["ab", "cd"], ["bo", "no"], ["C", "++"], ["ta", "sa"]]);
+      return mkQ("¿Qué imprime?", `string s = "${a}";\ns += "${b}";\ncout << s;`,
+        a + b, [b, `${a} ${b}`],
+        "`+=` agrega al final del `string`, sin espacios.", 3);
+    },
+    function () {
+      const d = rnd(1, 9);
+      return mkQ("¿Qué imprime?", `char c = '${d}';\ncout << c - '0';`,
+        d, [48 + d, `${d}0`],
+        `'${d}' tiene código ${48 + d} y '0' tiene 48: la resta da ${d}. Es la forma típica de pasar un dígito a número.`, 3);
+    },
+    function () {
+      const a = rnd(1, 5), b = rnd(2, 6);
+      return mkQ("¿Qué imprime?", `#define DOBLE(x) x * 2\ncout << DOBLE(${a} + ${b});`,
+        a + b * 2, [(a + b) * 2, "No compila"],
+        `La macro solo reemplaza texto: queda \`${a} + ${b} * 2\` = ${a + b * 2}. Por eso en las macros se ponen paréntesis: \`((x) * 2)\`.`, 3);
+    },
+    function () {
+      const [a, b] = [rnd(1, 9), rnd(1, 9)];
+      return mkQ("¿Qué imprime?", `string a = "${a}", b = "${b}";\ncout << a + b;`,
+        `${a}${b}`, [a + b === Number(`${a}${b}`) ? `${a} ${b}` : a + b, "No compila"],
+        "Son `string`, no números: `+` los concatena.", 3);
+    },
+    function () {
+      const n = pick(["N", "MAX", "TASA"]);
+      return mkQ("¿Qué pasa?", `const int ${n};\ncout << ${n};`,
+        "No compila", [0, "indeterminado"],
+        "Una constante debe inicializarse en su declaración, porque después ya no se puede asignar.", 3);
+    },
+    function () {
+      const l = pick(["A", "x", "7"]);
+      return mkQ("¿Qué pasa?", `char c = "${l}";`,
+        "No compila", [l, l.charCodeAt(0)],
+        "Comillas dobles es una cadena (aunque tenga una letra), y no se puede guardar en un `char`. Lo correcto es `'" + l + "'`.", 3);
     }
   ];
 
@@ -1115,6 +1397,85 @@
       return mkQ("¿Cuánto vale `value` al final?", "int value = 3;\nvalue += 2;\nvalue *= 4;\nvalue -= 5;\nvalue /= 3;\nvalue %= 4;",
         1, [5, 15],
         "Paso a paso: 3 → 5 → 20 → 15 → 5 → 5 % 4 = 1.", 3);
+    },
+    function () {
+      const [v, w] = vars(2), a = rnd(2, 9), ask = pick([v, w]);
+      return mkQ(`¿Cuánto vale \`${ask}\`?`, `int ${v} = ${a};\nint ${w} = ${v}++ + 2;`,
+        ask === w ? a + 2 : a + 1, ask === w ? [a + 3, a] : [a, a + 2],
+        `\`${v}++\` entrega el valor ANTES de sumar (${a}) y después incrementa: ${w} = ${a} + 2 = ${a + 2}, y ${v} queda en ${a + 1}.`, 3);
+    },
+    function () {
+      const [v, w] = vars(2), a = rnd(2, 9);
+      return mkQ(`¿Cuánto vale \`${w}\`?`, `int ${v} = ${a};\nint ${w} = ++${v} * 2;`,
+        (a + 1) * 2, [a * 2, a * 2 + 1],
+        `\`++${v}\` incrementa PRIMERO y entrega el valor nuevo: (${a} + 1)·2 = ${(a + 1) * 2}.`, 3);
+    },
+    function () {
+      let a = rnd(11, 60), b = rnd(3, 9); if (a % b === 0) a++;
+      return mkQ("¿Qué imprime?", `cout << ${a} / ${b};`,
+        Math.floor(a / b), [(a / b).toFixed(2), Math.round(a / b) === Math.floor(a / b) ? Math.floor(a / b) + 1 : Math.round(a / b)],
+        `Entre enteros, \`/\` descarta los decimales: ${a} / ${b} = ${Math.floor(a / b)} (resto ${a % b}).`, 3);
+    },
+    function () {
+      let a = rnd(11, 60), b = rnd(3, 9); if (a % b === 0) a++;
+      return mkQ("¿Qué imprime?", `cout << ${a} % ${b};`,
+        a % b, [Math.floor(a / b), b - (a % b) === a % b ? a % b + 1 : b - (a % b)],
+        `\`%\` es el resto de la división entera: ${a} = ${Math.floor(a / b)}·${b} + ${a % b}.`, 3);
+    },
+    function () {
+      let a = rnd(7, 30), b = rnd(3, 6); if (a % b === 0) a++;
+      return mkQ("¿Qué imprime?", `cout << -${a} % ${b};`,
+        -(a % b), [a % b, b - (a % b) === a % b ? b : b - (a % b)],
+        `En C++ el resto toma el signo del dividendo: −${a} / ${b} = −${Math.floor(a / b)} y sobra −${a % b}.`, 3);
+    },
+    function () {
+      const [v] = vars(1), a = rnd(10, 20), b = rnd(3, 6), c = rnd(1, 2);
+      return mkQ(`¿Cuánto vale \`${v}\`?`, `int ${v} = ${a};\n${v} -= ${b} - ${c};`,
+        a - (b - c), [a - b - c, a - b + c === a - (b - c) ? a - b : a - b],
+        `\`${v} -= expr\` es \`${v} = ${v} - (expr)\`: primero ${b} − ${c} = ${b - c}, luego ${a} − ${b - c} = ${a - (b - c)}.`, 3);
+    },
+    function () {
+      const a = rnd(2, 9), b = rnd(2, 6), c = rnd(2, 6);
+      return mkQ("¿Qué imprime?", `cout << ${a} + ${b} * ${c};`,
+        a + b * c, [(a + b) * c, a * b + c === a + b * c ? a * b : a * b + c],
+        `\`*\` se calcula antes que \`+\`: ${b}·${c} = ${b * c}, más ${a} = ${a + b * c}.`, 3);
+    },
+    function () {
+      const c = rnd(2, 4), d = rnd(2, 3), q = rnd(2, 5), a = q * c - rnd(1, 3) + c, b = 0;
+      const tot = a + b, r = Math.floor(tot / c) * d;
+      return mkQ("¿Qué imprime?", `cout << ${a} / ${c} * ${d};`,
+        r, [Math.floor(a / (c * d)), (a / c * d) % 1 === 0 ? r + d : +(a / c * d).toFixed(2)],
+        `\`/\` y \`*\` tienen la misma precedencia y se evalúan de izquierda a derecha: (${a} / ${c}) = ${Math.floor(a / c)} (división entera), por ${d} = ${r}.`, 3);
+    },
+    function () {
+      const [v] = vars(1), a = 2 * rnd(3, 12) + 1;
+      return mkQ(`¿Cuánto vale \`${v}\`?`, `int ${v} = ${a};\n${v} /= 2;\n${v} *= 2;`,
+        a - 1, [a, a + 1],
+        `${a} / 2 = ${(a - 1) / 2} (división entera, se pierde el 0,5). Por 2 da ${a - 1}, no ${a}.`, 3);
+    },
+    function () {
+      const [v] = vars(1), a = rnd(5, 15);
+      return mkQ("¿Qué imprime?", `int ${v} = ${a};\n${v}--;\n--${v};\ncout << ${v};`,
+        a - 2, [a - 1, a],
+        `Usados solos en su línea, \`${v}--\` y \`--${v}\` hacen lo mismo: restan 1 cada uno. ${a} − 2 = ${a - 2}.`, 3);
+    },
+    function () {
+      let a = rnd(5, 15), b = 2; if (a % 2 === 0) a++;
+      return mkQ("¿Qué imprime?", `cout << ${a} / ${b} * 2.0;`,
+        (a - 1), [a, (a - 1) / 2],
+        `Primero \`${a} / 2\` entre enteros = ${(a - 1) / 2}. Recién después se multiplica por 2.0: ${a - 1}.`, 3);
+    },
+    function () {
+      const [v] = vars(1), a = 2 * rnd(2, 9) + 1;
+      return mkQ(`¿Cuánto vale \`${v}\`?`, `double ${v} = ${a} / 2;`,
+        (a - 1) / 2, [a / 2, (a + 1) / 2],
+        `\`${a} / 2\` es división entera (= ${(a - 1) / 2}); el resultado recién después se guarda en el \`double\`. Para ${a / 2} hay que escribir \`${a} / 2.0\`.`, 3);
+    },
+    function () {
+      const [v] = vars(1), a = rnd(2, 6), b = rnd(2, 4);
+      return mkQ(`¿Cuánto vale \`${v}\`?`, `int ${v} = ${a};\n${v} += ${v} * ${b};`,
+        a + a * b, [a * b, (a + a) * b],
+        `\`${v} += expr\` es \`${v} = ${v} + (expr)\`: ${a} + ${a}·${b} = ${a + a * b}.`, 3);
     }
   ];
 
@@ -1192,6 +1553,77 @@
       return mkQ("Dispara al valor final de `b`", "int a = 2, b = 3;\nbool result = ((b = 2) == a);",
         2, [3, "true", 0],
         "`b = 2` asigna (no compara): ahora `b` vale 2. Recién después se compara con `a`.");
+    },
+    function () {
+      const a = rnd(1, 9), b = rnd(1, 9), r = !(a > b) ? 1 : 0;
+      return mkQ("Dispara a lo que imprime", `cout << !(${a} > ${b});`,
+        r, [1 - r, "true", "No compila"],
+        `${a} > ${b} es ${a > b ? "verdadero" : "falso"}; \`!\` lo invierte. Como \`bool\` se imprime ${r}.`);
+    },
+    function () {
+      const k = pick([rnd(-5, 0), rnd(1, 8)]);
+      return mkQ("Dispara al valor final de `i`", `int i = ${k};\nbool b = (i > 0) || (++i > 5);`,
+        k > 0 ? k : k + 1, [k > 0 ? k + 1 : k, 0, 1].filter((x, j, arr) => arr.indexOf(x) === j).concat([k + 2]),
+        k > 0 ? "Cortocircuito: `i > 0` es verdadero, así que `||` ya sabe que el resultado es verdadero y no evalúa `++i`."
+          : "`i > 0` es falso, así que `||` necesita evaluar la derecha: `++i` corre y suma 1.");
+    },
+    function () {
+      const v = pick([["true || false && false", 1, "`&&` tiene más precedencia que `||`: true || (false && false) = true || false = true."],
+        ["false && true || true", 1, "Se agrupa (false && true) || true = false || true = true."],
+        ["true && false || false", 0, "(true && false) || false = false || false = false."],
+        ["!true || false", 0, "`!` se aplica primero: false || false = false."]]);
+      return mkQ("Dispara a lo que imprime", `cout << (${v[0]});`,
+        v[1], [1 - v[1], "true", "No compila"], v[2] + " Como `bool` se imprime " + v[1] + ".");
+    },
+    function () {
+      const a = rnd(1, 15), b = rnd(1, 15), r = a | b;
+      return mkQ(`Dispara al valor de \`${a} | ${b}\``, `// ${a} = ${a.toString(2).padStart(4, "0")}₂   ${b} = ${b.toString(2).padStart(4, "0")}₂`,
+        r, [a & b, (a ^ b) === r ? a + b + 1 : a ^ b, a + b === r ? r + 16 : a + b],
+        `OR bit a bit: queda 1 donde cualquiera de los dos tiene 1 → ${r.toString(2).padStart(4, "0")} = ${r}.`);
+    },
+    function () {
+      const s = rnd(1, 3), k = rnd(9, 99), r = k >> s;
+      return mkQ("Dispara a lo que imprime", `cout << (${k} >> ${s});`,
+        r, [k * 2 ** s, Math.round(k / 2 ** s) === r ? r + 1 : Math.round(k / 2 ** s), k - s],
+        `\`x >> k\` desplaza los bits a la derecha: divide por 2ᵏ descartando el resto. ${k} / ${2 ** s} = ${r}.`);
+    },
+    function () {
+      return mkQ("Dispara a lo que imprime", "cout << ~0;",
+        -1, [1, 0, "4294967295"],
+        "`~` invierte todos los bits. 0 es todo ceros; invertido es todo unos, que en un `int` con signo vale −1.");
+    },
+    function () {
+      let a = rnd(5, 19), b = rnd(2, 4); if (a % b === 0) a++;
+      const outer = pick([true, false]);
+      return mkQ("Dispara a lo que imprime", outer ? `cout << (double) ${a} / ${b};` : `cout << (double) (${a} / ${b});`,
+        outer ? cout6(a / b) : Math.floor(a / b), outer ? [Math.floor(a / b), Math.ceil(a / b), "No compila"] : [cout6(a / b), Math.ceil(a / b), "No compila"],
+        outer ? `El cast se aplica solo a ${a} (más precedencia que \`/\`): ${a}.0 / ${b} es división real = ${cout6(a / b)} (\`cout\` muestra 6 cifras).`
+          : `Los paréntesis hacen la división entera primero (${Math.floor(a / b)}) y recién después la convierten a \`double\`: llega tarde.`);
+    },
+    function () {
+      const w = rnd(2, 9), f = pick([".1", ".5", ".8", ".99"]);
+      return mkQ("Dispara a lo que imprime", `cout << static_cast<int>(${w}${f});`,
+        w, [w + 1, `${w}${f}`, "No compila"],
+        "Convertir a `int` trunca: se descarta la parte decimal, no se redondea.");
+    },
+    function () {
+      const x = rnd(1, 15), r = x > 10 ? "alto" : x > 5 ? "medio" : "bajo";
+      return mkQ("Dispara a lo que imprime", `int x = ${x};\ncout << (x > 10 ? "alto" : x > 5 ? "medio" : "bajo");`,
+        r, ["alto", "medio", "bajo", "No compila"].filter(s => s !== r),
+        `Se lee de izquierda a derecha: ${x} > 10 es ${x > 10 ? "verdadero" : "falso"}${x > 10 ? "" : `, ${x} > 5 es ${x > 5 ? "verdadero" : "falso"}`}. Resultado: "${r}".`);
+    },
+    function () {
+      const v = pick([["3 == 3 == 1", 1, "(3 == 3) da true, que vale 1; luego 1 == 1 es true."], ["5 > 4 > 3", 0, "(5 > 4) da true = 1; luego 1 > 3 es false. No significa 'entre'."],
+        ["1 < 2 < 0", 0, "(1 < 2) = 1; luego 1 < 0 es false."], ["7 > 5 > 0", 1, "(7 > 5) = 1; luego 1 > 0 es true."]]);
+      return mkQ("Dispara a lo que imprime", `cout << (${v[0]});`,
+        v[1], [1 - v[1], "No compila", "true"],
+        "Las comparaciones se evalúan de a pares, de izquierda a derecha: " + v[2]);
+    },
+    function () {
+      const a = rnd(10, 99);
+      return mkQ("Dispara a lo que imprime", `cout << (${a} & 1);`,
+        a % 2, [1 - (a % 2), a, a + 1],
+        `\`& 1\` deja solo el último bit, que indica la paridad: ${a} es ${a % 2 ? "impar (1)" : "par (0)"}.`);
     }
   ];
 
@@ -1249,7 +1681,79 @@
         "P=98.5", ["P= 98.5", "98.5"],
         "`stringstream` también sirve al revés: con `<<` se arma un texto a partir de valores.", 3);
     },
-    TYPES_GENS[13]
+    TYPES_GENS[13],
+    function () {
+      const n = rnd(10, 99), t = pick(["abc", "kg", "x7", "pesos"]);
+      return mkQ("¿Qué imprime?", `int a = 0;\ncin >> a;            // entrada: ${n}${t}\ncout << a * 2;`,
+        n * 2, [0, "No compila"],
+        `\`>>\` lee los dígitos mientras puede (${n}) y se detiene en la primera letra. Lo que sobra queda en el búfer.`, 3);
+    },
+    function () {
+      const w = rnd(2, 9), f = pick(["75", "5", "25"]), asInt = pick([true, false]);
+      return mkQ("¿Qué imprime?", asInt ? `int n;\ncin >> n;            // entrada: ${w}.${f}\ncout << n;` : `double d;\ncin >> d;            // entrada: ${w}.${f}\ncout << d;`,
+        asInt ? w : `${w}.${f}`, asInt ? [`${w}.${f}`, w + 1] : [w, "No compila"],
+        asInt ? `Al leer un \`int\`, \`>>\` toma ${w} y se detiene en el punto. ".${f}" queda sin leer.` : "Un `double` lee el número completo, con decimales.", 3);
+    },
+    function () {
+      const a = rnd(2, 20), b = rnd(2, 20);
+      return mkQ("¿Qué imprime?", `int a, b;\ncin >> a >> b;\n// entrada:\n// ${a}\n// ${b}\ncout << a + b;`,
+        a + b, [a, `${a}${b}`],
+        "`>>` se salta los espacios y los saltos de línea: da lo mismo si los números vienen en la misma línea o en dos.", 3);
+    },
+    function () {
+      const [p, q] = pick([["Ana", "María"], ["Juan", "Pablo"], ["San", "Pedro"]]), which = pick([1, 2]);
+      return mkQ("¿Qué imprime?", `string s1, s2;\ncin >> s1 >> s2;     // entrada: ${p} ${q}\ncout << s${which};`,
+        which === 1 ? p : q, [`${p} ${q}`, which === 1 ? q : p],
+        `Cada \`>>\` lee una palabra: s1 = "${p}" y s2 = "${q}".`, 3);
+    },
+    function () {
+      const ph = pick(["Hola mundo", "C++ Arcade", "tasa anual", "a b c"]);
+      return mkQ("¿Qué imprime?", `string s;\ngetline(cin, s);     // entrada: ${ph}\ncout << s.size();`,
+        ph.length, [ph.split(" ")[0].length, ph.replace(/ /g, "").length],
+        `\`getline\` guarda la línea completa, espacios incluidos: "${ph}" tiene ${ph.length} caracteres (el salto de línea final no se guarda).`, 3);
+    },
+    function () {
+      const extra = pick([true, false]);
+      return mkQ("¿En cuántas líneas sale?", extra ? 'cout << "A" << endl << "B" << endl << "C";' : 'cout << "A" << "B" << endl << "C";',
+        extra ? 3 : 2, extra ? [1, 2] : [1, 3],
+        "Cada `endl` corta la línea. " + (extra ? "Hay dos cortes: A, B y C quedan en tres líneas." : "Hay un solo corte: \"AB\" y luego \"C\"."), 3);
+    },
+    function () {
+      const n = rnd(1, 99), w = pick([4, 5, 6]), s = String(n).padStart(w, "·");
+      return mkQ("¿Qué imprime? (· = espacio)", `cout << setw(${w}) << ${n};`,
+        s, [String(n).padEnd(w, "·"), String(n)],
+        `\`setw(${w})\` reserva ${w} columnas para lo que sigue y, por defecto, lo alinea a la derecha rellenando con espacios.`, 3);
+    },
+    function () {
+      const a = rnd(5, 40), b = rnd(5, 40), c = rnd(5, 40);
+      return mkQ("¿Qué imprime?", `stringstream ss("${a} ${b} ${c}");\nint x, y;\nss >> x >> y;\ncout << x + y;`,
+        a + b, [a + b + c, `${a}${b}`],
+        `Se leen solo los dos primeros números (${a} y ${b}); ${c} queda sin leer.`, 3);
+    },
+    function () {
+      const a = rnd(1, 99), b = rnd(1, 99), sep = pick(["-", "/", ":"]);
+      return mkQ("¿Qué imprime?", `stringstream ss;\nss << ${a} << "${sep}" << ${b};\ncout << ss.str();`,
+        `${a}${sep}${b}`, [`${a} ${sep} ${b}`, sep === "-" ? a - b : `${a}${b}`],
+        "`<<` sobre un `stringstream` va pegando todo, sin espacios: `str()` devuelve el texto armado.", 3);
+    },
+    function () {
+      const n = rnd(2, 9);
+      return mkQ("¿Qué imprime?", `int x;\ncin >> x;            // entrada: -${n}\ncout << x * x;`,
+        n * n, [-n * n, "No compila"],
+        `\`>>\` lee también el signo: x = −${n}, y (−${n})·(−${n}) = ${n * n}.`, 3);
+    },
+    function () {
+      const w = pick(["Hola", "Bono", "Santiago"]);
+      return mkQ("¿Qué imprime?", `char c;\ncin >> c;            // entrada: "   ${w}"\ncout << c;`,
+        w[0], [w, "' '"],
+        "`>>` se salta los espacios iniciales y lee un solo carácter: la primera letra.", 3);
+    },
+    function () {
+      const a = rnd(1, 9), b = rnd(1, 9), c = rnd(1, 9);
+      return mkQ("¿Qué sale en la primera línea?", `cout << ${a} << ${b} << endl << ${c};`,
+        `${a}${b}`, [`${a}`, `${a}${b}${c}`],
+        `Se imprime ${a}, luego ${b}, y \`endl\` corta la línea. ${c} queda en la segunda.`, 3);
+    }
   ];
 
   /* ---------- 8 · Archivos fuente, header e #include (clasificador) ---------- */
@@ -1273,7 +1777,31 @@
     { code: "#include \"calculations.h\"\n// para verificar que la definición\n// coincide con la declaración", ask: "Esta línea, con ese propósito, ¿en qué archivo va?", bin: ".cpp",
       explain: "El `.cpp` de implementación incluye su propio header para que el compilador revise que todo coincide." },
     { code: "std::cout << add(1.5, 2.5);", ask: "¿En qué archivo va?", bin: "main.cpp",
-      explain: "Llamar la función es trabajo de quien la usa." }
+      explain: "Llamar la función es trabajo de quien la usa." },
+    { code: "double interest(double capital, double rate);", ask: "¿En qué archivo va este prototipo?", bin: ".h",
+      explain: "Los prototipos forman la interfaz: van en el header para que otros archivos puedan llamar la función." },
+    { code: "int maxOf(int a, int b);", ask: "¿En qué archivo va este prototipo?", bin: ".h",
+      explain: "Declarar qué funciones existen y con qué tipos es tarea del header." },
+    { code: "#ifndef FINANCE_H\n#define FINANCE_H", ask: "¿En qué archivo va?", bin: ".h",
+      explain: "La guarda de inclusión abre el header para que su contenido no se procese dos veces." },
+    { code: "void printReport(int year);", ask: "¿En qué archivo va este prototipo?", bin: ".h",
+      explain: "Una declaración (sin cuerpo, con `;`) va en el header." },
+    { code: "#include <string>\nstd::string format(double x);", ask: "¿En qué archivo va?", bin: ".h",
+      explain: "Si el prototipo usa `std::string`, el header debe incluir `<string>` para que se entienda solo." },
+    { code: "int maxOf(int a, int b) {\n  return a > b ? a : b;\n}", ask: "¿En qué archivo va?", bin: ".cpp",
+      explain: "El cuerpo de la función es la implementación: va en el `.cpp`." },
+    { code: "void printReport(int year) {\n  std::cout << \"Año \" << year;\n}", ask: "¿En qué archivo va?", bin: ".cpp",
+      explain: "La definición completa va en un solo `.cpp`." },
+    { code: "double interest(double capital, double rate) {\n  return capital * rate;\n}", ask: "¿En qué archivo va?", bin: ".cpp",
+      explain: "Implementación de una función de la biblioteca: `.cpp`." },
+    { code: "#include \"calculations.h\"\n\nint main() {\n  // ...\n}", ask: "¿En qué archivo va?", bin: "main.cpp",
+      explain: "`main` es el programa que usa la biblioteca: incluye el header y llama a las funciones." },
+    { code: "int main() {\n  printReport(2026);\n}", ask: "¿En qué archivo va?", bin: "main.cpp",
+      explain: "Quien llama la función es el programa principal." },
+    { code: "double r = interest(1000, 0.05);\nstd::cout << r;", ask: "¿En qué archivo va?", bin: "main.cpp",
+      explain: "Usar la función (llamarla e imprimir) es trabajo de quien la usa." },
+    { code: "int x = maxOf(3, 8);", ask: "¿En qué archivo va esta llamada?", bin: "main.cpp",
+      explain: "Una llamada a la función va en el programa que la usa, no en la biblioteca." }
   ];
 
   /* ---------- 9 · Funciones: definición y llamadas (carrera) ---------- */
@@ -1330,6 +1858,79 @@
       return mkQ("¿Qué imprime?", "int addition(int a, int b) { return a + b; }\n\nint main() {\n  addition(5, 3);\n  cout << \"fin\";\n}",
         "fin", ["8fin", "8"],
         "El valor retornado se descarta si nadie lo usa. Retornar no es imprimir.", 3);
+    },
+    function () {
+      const a = rnd(2, 6), b = rnd(2, 6);
+      return mkQ("¿Qué imprime?", `int sq(int x) { return x * x; }\n\ncout << sq(${a}) + sq(${b});`,
+        a * a + b * b, [(a + b) * (a + b), a * 2 + b * 2],
+        `sq(${a}) = ${a * a} y sq(${b}) = ${b * b}. Suma: ${a * a + b * b}.`, 3);
+    },
+    function () {
+      const t = rnd(3, 8), a = rnd(1, 12);
+      return mkQ("¿Qué imprime?", `int f(int x) {\n  if (x > ${t}) return 1;\n  return 2;\n}\ncout << f(${a});`,
+        a > t ? 1 : 2, [a > t ? 2 : 1, "12"],
+        `${a} > ${t} es ${a > t ? "verdadero: retorna 1 y la función termina ahí" : "falso: sigue a la línea siguiente y retorna 2"}.`, 3);
+    },
+    function () {
+      const a = rnd(2, 3);
+      return mkQ("¿Qué imprime?", `int sq(int x) { return x * x; }\n\ncout << sq(sq(${a}));`,
+        a ** 4, [a * a, a ** 3],
+        `Primero la llamada de adentro: sq(${a}) = ${a * a}. Luego sq(${a * a}) = ${a ** 4}.`, 3);
+    },
+    function () {
+      const k = rnd(1, 3);
+      return mkQ("¿Qué imprime?", `int f() {\n  cout << "x";\n  return ${k};\n}\nint main() {\n  int a = f() + f();\n  cout << a;\n}`,
+        `xx${2 * k}`, [`${2 * k}`, `x${2 * k}`],
+        `Cada llamada imprime "x" y devuelve ${k}. Se llama dos veces: "xx", y después se imprime la suma ${2 * k}.`, 3);
+    },
+    function () {
+      const n = rnd(5, 40);
+      let r = 1; while (r * r <= n) r++;
+      return mkQ(`¿Qué imprime?`, `int g(int n) {\n  for (int i = 1; i <= n; i++)\n    if (i * i > n) return i;\n  return -1;\n}\ncout << g(${n});`,
+        r, [r - 1, -1],
+        `\`return\` dentro del ciclo termina la función de inmediato: el primer i con i² > ${n} es ${r} (${r}² = ${r * r}).`, 3);
+    },
+    function () {
+      const k = rnd(2, 4);
+      return mkQ("¿Qué imprime?", `int counter() {\n  int c = 0;\n  c++;\n  return c;\n}\n${"counter();\n".repeat(k - 1)}cout << counter();`,
+        1, [k, 0],
+        "`c` es local: se crea de nuevo (en 0) en cada llamada y desaparece al terminar. Siempre devuelve 1.", 3);
+    },
+    function () {
+      const a = rnd(1, 9), b = rnd(10, 20);
+      return mkQ("¿Qué imprime?", `int x = ${a};   // global\nint f(int x) { return x * 2; }\n\ncout << f(${b});`,
+        2 * b, [2 * a, a + b],
+        `Dentro de \`f\`, el parámetro \`x\` tapa a la global: x = ${b}, así que retorna ${2 * b}.`, 3);
+    },
+    function () {
+      const a = rnd(2, 9), b = rnd(2, 9);
+      return mkQ("¿Qué imprime?", `int total = 0;\nvoid add(int v) { total += v; }\n\nadd(${a});\nadd(${b});\ncout << total;`,
+        a + b, [b, 0],
+        `\`total\` es global: las dos llamadas modifican la misma variable. 0 + ${a} + ${b} = ${a + b}.`, 3);
+    },
+    function () {
+      const a = 2 * rnd(2, 9) + 1;
+      return mkQ("¿Qué imprime?", `int half(double x) { return x / 2; }\n\ncout << half(${a});`,
+        (a - 1) / 2, [a / 2, (a + 1) / 2],
+        `x / 2 = ${a / 2}, pero la función retorna \`int\`: al convertir se trunca a ${(a - 1) / 2}.`, 3);
+    },
+    function () {
+      let a = rnd(2, 9), b = rnd(2, 9); if ((a + b) % 2 === 0) b++;
+      return mkQ("¿Qué imprime?", `double avg(int a, int b) {\n  return (a + b) / 2;\n}\ncout << avg(${a}, ${b});`,
+        (a + b - 1) / 2, [(a + b) / 2, (a + b + 1) / 2],
+        `\`(a + b) / 2\` se calcula entre enteros: ${a + b} / 2 = ${(a + b - 1) / 2}. Que la función retorne \`double\` no recupera el 0,5. Hay que escribir \`/ 2.0\`.`, 3);
+    },
+    function () {
+      const a = rnd(1, 30);
+      return mkQ("¿Qué imprime?", `bool isEven(int n) { return n % 2 == 0; }\n\nif (isEven(${a})) cout << "par";\nelse cout << "impar";`,
+        a % 2 === 0 ? "par" : "impar", [a % 2 === 0 ? "impar" : "par", a % 2],
+        `${a} % 2 = ${a % 2}, así que \`isEven\` retorna ${a % 2 === 0 ? "true" : "false"}.`, 3);
+    },
+    function () {
+      const a = rnd(2, 9), b = rnd(10, 19);
+      return mkQ("¿Qué imprime?", `int f(int a, int b) { return a - b; }\n\nint a = ${a}, b = ${b};\ncout << f(b, a);`,
+        b - a, [a - b, 0],
+        `Los argumentos se asignan por posición, no por nombre: dentro de \`f\`, a = ${b} y b = ${a}. Retorna ${b - a}.`, 3);
     }
   ];
 
@@ -1379,6 +1980,79 @@
       return mkQ("Dispara: ¿qué pasa?", "void f(const int& a) {\n  a = 5;\n}",
         "No compila", ["a = 5", "Nada", "Error al ejecutar"],
         "`const&` evita la copia pero protege el original: dentro de la función no se puede modificar.");
+    },
+    function () {
+      const x = rnd(2, 9), ref = pick([true, false]);
+      return mkQ("Dispara al valor final de `x`", `void inc(int${ref ? "&" : ""} n) { n++; }\n\nint x = ${x};\ninc(x);\ninc(x);`,
+        ref ? x + 2 : x, ref ? [x, x + 1, 2] : [x + 2, x + 1, 2],
+        ref ? "Con `&`, `n` es otro nombre para `x`: las dos llamadas la incrementan." : "Sin `&`, `n` es una copia: los incrementos se pierden al terminar cada llamada.");
+    },
+    function () {
+      const x = rnd(2, 9), ask = pick(["x", "y"]);
+      return mkQ(`Dispara al valor de \`${ask}\``, `int f(int& a) {\n  a = a * 2;\n  return a + 1;\n}\nint x = ${x};\nint y = f(x);`,
+        ask === "x" ? 2 * x : 2 * x + 1, ask === "x" ? [x, 2 * x + 1, x + 1] : [x + 1, 2 * x, 2 * x + 2],
+        `\`a\` es referencia a \`x\`: x pasa a ${2 * x}, y la función retorna ${2 * x} + 1 = ${2 * x + 1}, que se guarda en y.`);
+    },
+    function () {
+      const x = rnd(2, 9), y = rnd(10, 19);
+      return mkQ("Dispara al valor de `x + y`", `void reset(int& a, int b) {\n  a = 0;\n  b = 0;\n}\nint x = ${x}, y = ${y};\nreset(x, y);`,
+        y, [0, x + y, x],
+        `Solo \`a\` es referencia: x pasa a 0. \`b\` es una copia, así que y sigue en ${y}. Suma: ${y}.`);
+    },
+    function () {
+      const a = rnd(2, 9), b = rnd(2, 9);
+      return mkQ("Dispara al valor final de `t`", `void addTo(int& total, int v) {\n  total += v;\n}\nint t = 0;\naddTo(t, ${a});\naddTo(t, ${b});`,
+        a + b, [0, b, a * b],
+        `\`total\` es referencia a \`t\`: acumula ${a} y luego ${b}.`);
+    },
+    function () {
+      const [v, r] = ["saldo", "alias"], a = rnd(10, 50), b = rnd(51, 99), ref = pick([true, false]);
+      return mkQ(`Dispara al valor de \`${v}\``, `int ${v} = ${a};\nint${ref ? "&" : ""} ${r} = ${v};\n${r} = ${b};`,
+        ref ? b : a, ref ? [a, 0, a + b] : [b, 0, a + b],
+        ref ? `\`int& ${r}\` es una referencia: otro nombre para \`${v}\`. Asignar a \`${r}\` cambia \`${v}\`.` : `Sin \`&\`, \`${r}\` es una copia independiente: cambiarla no afecta a \`${v}\`.`);
+    },
+    function () {
+      const x = rnd(2, 9);
+      return mkQ("Dispara al valor final de `x`", `void f(int& a, int& b) {\n  a = a + b;\n  b = a - b;\n}\nint x = ${x};\nf(x, x);`,
+        0, [x, 2 * x, x * x],
+        `\`a\` y \`b\` son los dos referencias a la MISMA variable x. Primero x = ${x} + ${x} = ${2 * x}; luego x = ${2 * x} − ${2 * x} = 0.`);
+    },
+    function () {
+      const k = rnd(2, 20);
+      return mkQ("Dispara a lo que imprime", `int dbl(const int& v) { return 2 * v; }\n\ncout << dbl(${k});`,
+        2 * k, [k, "No compila", 0],
+        "Una referencia `const` sí acepta un literal: no lo va a modificar. Sirve para pasar sin copiar.");
+    },
+    function () {
+      const v = shuffle([rnd(1, 9), rnd(10, 19), rnd(20, 29)]), ask = pick(["x", "y", "z"]);
+      const res = { x: v[1], y: v[2], z: v[0] };
+      return mkQ(`Dispara al valor final de \`${ask}\``, `void rot(int& a, int& b, int& c) {\n  int t = a;\n  a = b; b = c; c = t;\n}\nint x = ${v[0]}, y = ${v[1]}, z = ${v[2]};\nrot(x, y, z);`,
+        res[ask], v.filter(n => n !== res[ask]).concat([0]),
+        `Rota los valores: x toma el de y (${v[1]}), y el de z (${v[2]}), z el que tenía x (${v[0]}).`);
+    },
+    function () {
+      const a = rnd(10, 50), b = rnd(10, 50);
+      return mkQ("Dispara al valor de `hi - lo`", `void minmax(int a, int b, int& mn, int& mx) {\n  mn = a < b ? a : b;\n  mx = a < b ? b : a;\n}\nint lo, hi;\nminmax(${a}, ${b}, lo, hi);`,
+        Math.abs(a - b), [a - b === 0 ? 1 : -Math.abs(a - b), a + b, 0].filter(x => x !== Math.abs(a - b)).concat([Math.max(a, b)]),
+        `Los parámetros \`&\` sirven como salidas: lo = ${Math.min(a, b)}, hi = ${Math.max(a, b)}. Diferencia: ${Math.abs(a - b)}.`);
+    },
+    function () {
+      const x = rnd(2, 9);
+      return mkQ("Dispara al valor de `x + y`", `int twice(int n) {\n  n *= 2;\n  return n;\n}\nint x = ${x};\nint y = twice(x);`,
+        3 * x, [4 * x, 2 * x, x],
+        `\`n\` es copia: x sigue en ${x}. La función retorna ${2 * x}, que va a y. Suma: ${3 * x}.`);
+    },
+    function () {
+      const x = rnd(2, 9), y = rnd(10, 19), ask = pick(["x", "y"]);
+      return mkQ(`Dispara al valor final de \`${ask}\``, `void f(int a, int& b) {\n  b = a + b;\n  a = b;\n}\nint x = ${x}, y = ${y};\nf(x, y);`,
+        ask === "x" ? x : x + y, ask === "x" ? [x + y, y, 0] : [y, x, 0],
+        `\`b\` es referencia a y: y = ${x} + ${y} = ${x + y}. \`a\` es copia de x, así que \`a = b\` no cambia x (sigue en ${x}).`);
+    },
+    function () {
+      const x = rnd(2, 9);
+      return mkQ("Dispara al valor final de `x`", `int x = ${x};\nint& r = x;\nr++;\nx++;`,
+        x + 2, [x + 1, x, 2 * x],
+        `\`r\` y \`x\` son la misma variable con dos nombres: dos incrementos sobre ella. ${x} + 2 = ${x + 2}.`);
     }
   ];
 
@@ -1399,7 +2073,17 @@
     { code: "void odd(int a);\nvoid even(int a);\nvoid odd(int a)  { if (a % 2) cout << \"impar\"; else even(a); }\nvoid even(int a) { if (a % 2 == 0) cout << \"par\"; else odd(a); }", bin: "compila", explain: "Recursión mutua: los prototipos permiten que cada función llame a la otra." },
     { code: "void odd(int a)  { if (a % 2) cout << \"impar\"; else even(a); }\nvoid even(int a) { if (a % 2 == 0) cout << \"par\"; else odd(a); }", bin: "no compila", explain: "Sin prototipos, `odd` usa `even` antes de que esté declarada." },
     { code: "void f(long x);\nvoid f(double x);\nf(3);", bin: "no compila", explain: "Llamada ambigua: convertir 3 (int) a `long` o a `double` cuesta lo mismo, y el compilador no puede elegir." },
-    { code: "void f(int x);\nvoid f(int x, int y);\nf(1, 2);", bin: "compila", explain: "Sobrecarga por número de parámetros: se elige la versión de dos." }
+    { code: "void f(int x);\nvoid f(int x, int y);\nf(1, 2);", bin: "compila", explain: "Sobrecarga por número de parámetros: se elige la versión de dos." },
+    { code: "int f(int a, int b = 3, int c = 4);\nint r = f(1);", bin: "compila", explain: "b y c toman sus valores por defecto: es como llamar f(1, 3, 4)." },
+    { code: "int f(int a, int b = 3, int c);", bin: "no compila", explain: "Después de un parámetro con valor por defecto, todos los siguientes también deben tenerlo." },
+    { code: "void f(int x = 1);\nvoid f(int x = 1) { }", bin: "no compila", explain: "El valor por defecto se escribe una sola vez (normalmente en el prototipo). Repetirlo en la definición es un error." },
+    { code: "void f(int x);\nvoid f(char x);\nf('a');", bin: "compila", explain: "Sobrecarga válida: `'a'` es un `char` y calza exacto con la segunda versión." },
+    { code: "int f(int x) { return x; }\nint f(int y) { return y + 1; }", bin: "no compila", explain: "Mismo nombre y mismos tipos de parámetros: es la misma función definida dos veces. El nombre del parámetro no cuenta." },
+    { code: "double avg(double a, double b);\ndouble r = avg(1, 2);", bin: "compila", explain: "Los `int` 1 y 2 se convierten solos a `double` para la llamada." },
+    { code: "void show(string s);\nshow(5);", bin: "no compila", explain: "Un `int` no se convierte solo a `string`: no hay una versión de `show` que acepte el 5." },
+    { code: "inline void hello() { cout << \"Hi\"; }\nhello();", bin: "compila", explain: "`inline` va en la definición y la llamada se escribe normal." },
+    { code: "void f(int& x);\nf(5);", bin: "no compila", explain: "Una referencia (no const) necesita una variable que pueda modificar; un literal como 5 no sirve." },
+    { code: "void f(const int& x);\nf(5);", bin: "compila", explain: "Una referencia `const` sí acepta un literal, porque promete no modificarlo." }
   ];
 
   /* ---------- 12 · Recursión (carrera) ---------- */
@@ -1445,6 +2129,87 @@
       return mkQ(`¿Cuánto devuelve \`fib(${k})\`?`, "int fib(int n) {\n  if (n < 2) return n;\n  return fib(n - 1) + fib(n - 2);\n}",
         fib(k), [fib(k - 1), fib(k + 1)],
         `fib: 0, 1, 1, 2, 3, 5, 8, 13… El de posición ${k} es ${fib(k)}.`, 3);
+    },
+    function () {
+      const n = rnd(3, 8);
+      return mkQ(`¿Cuánto devuelve \`s(${n})\`?`, "int s(int n) {\n  if (n == 0) return 0;\n  return n + s(n - 1);\n}",
+        n * (n + 1) / 2, [n * (n - 1) / 2, n * n],
+        `s(${n}) = ${Array.from({ length: n }, (_, i) => n - i).join(" + ")} + 0 = ${n * (n + 1) / 2}.`, 3);
+    },
+    function () {
+      const n = rnd(5, 9), out = []; for (let k = n; k > 0; k -= 2) out.push(k);
+      return mkQ(`¿Qué imprime \`f(${n})\`?`, "void f(int n) {\n  if (n <= 0) return;\n  cout << n;\n  f(n - 2);\n}",
+        out.join(""), [out.slice().reverse().join(""), Array.from({ length: n }, (_, i) => n - i).join("")],
+        `Imprime y después llama con n − 2, hasta que n ≤ 0: ${out.join(", ")}.`, 3);
+    },
+    function () {
+      const n = pick([rnd(1, 9), rnd(10, 99), rnd(100, 999), rnd(1000, 99999)]), d = String(n).length;
+      return mkQ(`¿Cuánto devuelve \`d(${n})\`?`, "int d(int n) {\n  if (n < 10) return 1;\n  return 1 + d(n / 10);\n}",
+        d, [d + 1, d - 1 || n % 10 + 10],
+        `Cada llamada quita el último dígito (n / 10) y suma 1, hasta quedar con un dígito: ${n} tiene ${d} dígito${d > 1 ? "s" : ""}.`, 3);
+    },
+    function () {
+      const n = rnd(100, 9999), s = String(n).split("").reduce((a, c) => a + Number(c), 0);
+      return mkQ(`¿Cuánto devuelve \`sd(${n})\`?`, "int sd(int n) {\n  if (n == 0) return 0;\n  return n % 10 + sd(n / 10);\n}",
+        s, [String(n).length, n % 10],
+        `Suma los dígitos: n % 10 es el último y n / 10 quita ese dígito. ${String(n).split("").join(" + ")} = ${s}.`, 3);
+    },
+    function () {
+      const g0 = pick([2, 3, 4, 5, 6]), a = g0 * rnd(2, 9), b = g0 * rnd(2, 9);
+      const gcd = (x, y) => y === 0 ? x : gcd(y, x % y), g = gcd(a, b);
+      return mkQ(`¿Cuánto devuelve \`g(${a}, ${b})\`?`, "int g(int a, int b) {\n  if (b == 0) return a;\n  return g(b, a % b);\n}",
+        g, [a % b === g ? 1 : a % b, Math.min(a, b) === g ? g * 2 : Math.min(a, b)],
+        `Es el algoritmo de Euclides: calcula el máximo común divisor. MCD(${a}, ${b}) = ${g}.`, 3);
+    },
+    function () {
+      const n = rnd(2, 8);
+      return mkQ(`¿Cuánto devuelve \`p(${n})\`?`, "int p(int n) {\n  if (n == 0) return 1;\n  return 2 * p(n - 1);\n}",
+        2 ** n, [2 * n, 2 ** (n - 1)],
+        `Multiplica por 2 una vez por cada nivel hasta llegar a 0: 2^${n} = ${2 ** n}.`, 3);
+    },
+    function () {
+      const n = rnd(2, 3), down = Array.from({ length: n }, (_, i) => n - i).join("");
+      return mkQ(`¿Qué imprime \`f(${n})\`?`, "void f(int n) {\n  if (n == 0) return;\n  cout << n;\n  f(n - 1);\n  cout << n;\n}",
+        down + down.split("").reverse().join(""), [down + down, down],
+        "Cada llamada imprime n al entrar y otra vez al volver. Las de entrada salen en orden de llamada; las de vuelta, en orden inverso.", 3);
+    },
+    function () {
+      const n = rnd(3, 9);
+      return mkQ(`¿Qué pasa con \`f(${n})\`?`, "int f(int n) {\n  if (n == 0) return 0;\n  return f(n - 2);\n}",
+        n % 2 === 0 ? "Devuelve 0" : "Stack overflow", n % 2 === 0 ? ["Stack overflow", `Devuelve ${n}`] : ["Devuelve 0", "Devuelve 1"],
+        n % 2 === 0 ? `Desde ${n} bajando de 2 en 2 se llega justo a 0: el caso base corta.` : `Desde ${n} (impar) bajando de 2 en 2 se salta el 0 (…, 1, −1, −3…): nunca llega al caso base y la pila se llena.`, 3);
+    },
+    function () {
+      const a = rnd(2, 9), b = rnd(2, 6);
+      return mkQ(`¿Cuánto devuelve \`m(${a}, ${b})\`?`, "int m(int a, int b) {\n  if (b == 0) return 0;\n  return a + m(a, b - 1);\n}",
+        a * b, [a + b, a ** b],
+        `Suma \`a\` b veces: ${Array(b).fill(a).join(" + ")} = ${a * b}. Es una multiplicación recursiva.`, 3);
+    },
+    function () {
+      const n = rnd(2, 9);
+      return mkQ(`¿Cuánto devuelve \`f(${n})\`?`, "int f(int n) {\n  if (n == 1) return 1;\n  return f(n - 1) + 2;\n}",
+        2 * n - 1, [2 * n, 2 * n + 1],
+        `f(1) = 1 y cada nivel suma 2: 1 + 2·${n - 1} = ${2 * n - 1}.`, 3);
+    },
+    function () {
+      const n = rnd(5, 30), bin = n.toString(2);
+      return mkQ(`¿Qué imprime \`b(${n})\`?`, "void b(int n) {\n  if (n > 1) b(n / 2);\n  cout << n % 2;\n}",
+        bin, [bin.split("").reverse().join("") === bin ? bin + "0" : bin.split("").reverse().join(""), String(n % 2)],
+        `Primero llama con n / 2 y RECIÉN DESPUÉS imprime el resto: los restos salen del último al primero, que es ${n} en binario.`, 3);
+    },
+    function () {
+      const n = rnd(4, 20);
+      return mkQ(`¿Cuánto devuelve \`f(${n})\`?`, "int f(int n) {\n  if (n <= 0) return 0;\n  return 1 + f(n - 3);\n}",
+        Math.ceil(n / 3), [Math.floor(n / 3) === Math.ceil(n / 3) ? Math.ceil(n / 3) + 1 : Math.floor(n / 3), n],
+        `Cuenta cuántas veces se puede restar 3 antes de llegar a 0 o menos: ${Math.ceil(n / 3)}.`, 3);
+    },
+    function () {
+      const f = pick([["int fact(int n) {\n  if (n <= 1) return 1;\n  return n * fact(n - 1);\n}", "n <= 1", "return n * fact(n - 1)"],
+        ["int sum(int n) {\n  if (n == 0) return 0;\n  return n + sum(n - 1);\n}", "n == 0", "return n + sum(n - 1)"],
+        ["int pot(int b, int e) {\n  if (e == 0) return 1;\n  return b * pot(b, e - 1);\n}", "e == 0", "return b * pot(b, e - 1)"]]);
+      return mkQ("¿Cuál es la condición del caso base?", f[0],
+        `\`${f[1]}\``, [`\`${f[2]}\``, "No tiene"],
+        "El caso base es la condición que responde sin volver a llamar a la función. Sin él, la recursión no termina.", 3);
     }
   ];
 
@@ -1484,6 +2249,79 @@
       return mkQ("¿Qué imprime?", "for (int n = 3; n > 0; --n)\n  cout << n;",
         "321", ["3210", "123"],
         "Inicia en 3, revisa la condición antes de cada vuelta y resta 1 después de cada cuerpo. Con n = 0 termina.", 3);
+    },
+    function () {
+      const a = rnd(0, 3), b = rnd(10, 20), s = rnd(2, 4), c = Math.ceil((b - a) / s);
+      return mkQ("¿Cuántas veces se ejecuta el cuerpo?", `for (int i = ${a}; i < ${b}; i += ${s})\n  cout << i;`,
+        c, [c + 1, Math.floor((b - a) / s) === c ? c - 1 : Math.floor((b - a) / s)],
+        `i toma ${Array.from({ length: c }, (_, k) => a + k * s).join(", ")}: ${c} vueltas. ${a + c * s} ya no cumple i < ${b}.`, 3);
+    },
+    function () {
+      const n = rnd(3, 9);
+      return mkQ("¿Qué imprime?", `int s = 0, i = 1;\nwhile (i <= ${n}) {\n  s += i;\n  i++;\n}\ncout << s;`,
+        n * (n + 1) / 2, [n * (n - 1) / 2, n],
+        `Suma 1 + 2 + … + ${n} = ${n * (n + 1) / 2}.`, 3);
+    },
+    function () {
+      const a = pick([rnd(-9, -1), rnd(0, 9)]);
+      return mkQ("¿Qué imprime?", `int n = ${a};\ndo {\n  n++;\n} while (n < 0);\ncout << n;`,
+        a < 0 ? 0 : a + 1, a < 0 ? [a, a + 1] : [a, 0],
+        a < 0 ? `Repite mientras n < 0: sube de ${a} hasta 0.` : `\`do-while\` ejecuta el cuerpo al menos una vez, ANTES de revisar: n = ${a + 1} y la condición ya es falsa.`, 3);
+    },
+    function () {
+      const n = rnd(3, 9);
+      return mkQ("¿Cuántas vueltas da?", `for (int i = 0; i <= ${n}; i++) {\n  // ...\n}`,
+        n + 1, [n, n - 1],
+        `Con \`<=\` se incluye el ${n}: i = 0, 1, …, ${n} son ${n + 1} vueltas.`, 3);
+    },
+    function () {
+      const n = rnd(6, 15), c = Math.floor(n / 2) + 1;
+      return mkQ("¿Qué imprime?", `int c = 0;\nfor (int i = ${n}; i >= 0; i -= 2)\n  c++;\ncout << c;`,
+        c, [c + 1, c - 1],
+        `i baja de 2 en 2: ${Array.from({ length: c }, (_, k) => n - 2 * k).join(", ")}. Son ${c} vueltas.`, 3);
+    },
+    function () {
+      const nota = +(rnd(10, 70) / 10).toFixed(1), r = nota >= 6 ? "excelente" : nota >= 4 ? "aprobado" : "reprobado";
+      return mkQ("¿Qué imprime?", `double nota = ${nota};\nif (nota >= 6) cout << "excelente";\nelse if (nota >= 4) cout << "aprobado";\nelse cout << "reprobado";`,
+        r, ["excelente", "aprobado", "reprobado"].filter(s => s !== r),
+        "En una cadena `else if` se ejecuta solo la PRIMERA condición verdadera, de arriba hacia abajo.", 3);
+    },
+    function () {
+      const x = pick([rnd(-5, 0), rnd(1, 10), rnd(11, 30)]), r = x > 0 ? (x > 10 ? "A" : "B") : "nada";
+      return mkQ("¿Qué imprime?", `int x = ${x};\nif (x > 0)\n  if (x > 10) cout << "A";\nelse cout << "B";`,
+        r, ["A", "B", "nada"].filter(s => s !== r),
+        "El `else` se asocia con el `if` más cercano (el de adentro), aunque la sangría sugiera otra cosa. " + (x <= 0 ? "Como x > 0 es falso, no se ejecuta nada." : ""), 3);
+    },
+    function () {
+      const n = rnd(10, 100);
+      let i = 1; while (i < n) i *= 2;
+      return mkQ("¿Qué imprime?", `int i = 1;\nwhile (i < ${n})\n  i *= 2;\ncout << i;`,
+        i, [i / 2, n],
+        `i se duplica (1, 2, 4, …) mientras sea menor que ${n}: se detiene en ${i}.`, 3);
+    },
+    function () {
+      const n = rnd(3, 7);
+      return mkQ("¿Cuántas veces se ejecuta `c++`?", `int c = 0;\nfor (int i = 0; i < ${n}; i++)\n  for (int j = 0; j < i; j++)\n    c++;`,
+        n * (n - 1) / 2, [n * n, n * (n + 1) / 2],
+        `El ciclo de adentro da i vueltas: 0 + 1 + … + ${n - 1} = ${n * (n - 1) / 2}.`, 3);
+    },
+    function () {
+      const n = rnd(3, 6);
+      return mkQ("¿Qué imprime?", `for (int i = 0; i < ${n}; i++);\n  cout << "x";`,
+        "x", ["x".repeat(n), "No compila"],
+        "El `;` justo después del `for` es un cuerpo vacío: el ciclo da sus vueltas sin hacer nada y `cout` se ejecuta una sola vez.", 3);
+    },
+    function () {
+      const a = rnd(1, 9);
+      return mkQ("¿Qué imprime?", `int x = ${a};\nif (x = 0) cout << "cero";\nelse cout << "otro";`,
+        "otro", ["cero", "No compila"],
+        "`x = 0` ASIGNA (no compara): x pasa a 0, y la condición vale 0, que es falso. Para comparar se usa `==`.", 3);
+    },
+    function () {
+      const a = rnd(-5, 15), r = a > 0 && a < 10 ? "dentro" : "fuera";
+      return mkQ("¿Qué imprime?", `int a = ${a};\nif (a > 0 && a < 10) cout << "dentro";\nelse cout << "fuera";`,
+        r, [r === "dentro" ? "fuera" : "dentro", "dentrofuera"],
+        `\`&&\` exige que se cumplan las dos: ${a} > 0 es ${a > 0}, ${a} < 10 es ${a < 10}.`, 3);
     }
   ];
 
@@ -1531,6 +2369,76 @@
       return mkQ("Dispara a lo que imprime", "int n = 3;\nloop:\n  cout << n;\n  n--;\n  if (n > 0) goto loop;",
         "321", ["3", "123", "No compila"],
         "`goto` salta a la etiqueta dentro de la misma función. Funciona, pero se prefieren ciclos estructurados.");
+    },
+    function () {
+      const x = rnd(1, 4), add = { 1: 6, 2: 5, 3: 3, 4: 10 }[x];
+      return mkQ("Dispara al valor final de `c`", `int c = 0;\nswitch (${x}) {\n  case 1: c += 1;\n  case 2: c += 2;\n  case 3: c += 3; break;\n  default: c += 10;\n}`,
+        add, [{ 1: 1, 2: 2, 3: 6, 4: 16 }[x], 16, 0].filter(v => v !== add).concat([add + 1]),
+        x === 4 ? "Ningún case coincide: va a `default` y suma 10." : `Entra en \`case ${x}\` y, sin \`break\`, sigue cayendo hasta el \`break\` del case 3.`);
+    },
+    function () {
+      const n = rnd(3, 5), m = rnd(1, 3);
+      return mkQ("Dispara al valor final de `c`", `int c = 0;\nfor (int i = 0; i < ${n}; i++)\n  for (int j = 0; j < 5; j++) {\n    if (j == ${m}) break;\n    c++;\n  }`,
+        n * m, [m, n * 5, n],
+        `\`break\` sale solo del ciclo de ADENTRO. Cada una de las ${n} vueltas de afuera suma ${m}: ${n * m}.`);
+    },
+    function () {
+      const n = rnd(5, 12); let s = 0; for (let i = 1; i <= n; i++) if (i % 2) s += i;
+      return mkQ("Dispara al valor final de `s`", `int s = 0;\nfor (int i = 1; i <= ${n}; i++) {\n  if (i % 2 == 0) continue;\n  s += i;\n}`,
+        s, [n * (n + 1) / 2, n * (n + 1) / 2 - s, s + n],
+        `\`continue\` salta los pares: suma solo los impares hasta ${n} = ${s}.`);
+    },
+    function () {
+      const c = pick(["a", "b", "x"]), r = c === "a" ? "A" : c === "b" ? "B" : "?";
+      return mkQ("Dispara a lo que imprime", `char c = '${c}';\nswitch (c) {\n  case 'a': cout << "A"; break;\n  case 'b': cout << "B"; break;\n  default: cout << "?";\n}`,
+        r, ["A", "B", "?", "AB?"].filter(s => s !== r),
+        "`switch` también funciona con `char`, porque es un tipo entero.");
+    },
+    function () {
+      const x = pick([1, 2, 5]), r = { 1: "1", 2: "2", 5: "D1" }[x];
+      return mkQ("Dispara a lo que imprime", `switch (${x}) {\n  default: cout << "D";\n  case 1: cout << "1"; break;\n  case 2: cout << "2";\n}`,
+        r, ["1", "2", "D1", "D", "D12"].filter(s => s !== r),
+        x === 5 ? "Ningún case es 5: salta a `default` y, como no tiene `break`, sigue cayendo en el case 1." : `Salta directo a \`case ${x}\`. Que \`default\` esté arriba no importa.`);
+    },
+    function () {
+      const a = rnd(10, 90); let n = 0; while (true) { n++; if (n * n > a) break; }
+      return mkQ("Dispara al valor final de `n`", `int n = 0;\nwhile (true) {\n  n++;\n  if (n * n > ${a}) break;\n}`,
+        n, [n - 1, a, n + 1],
+        `El \`while (true)\` solo termina con el \`break\`: el primer n con n² > ${a} es ${n}.`);
+    },
+    function () {
+      const t = pick([rnd(0, 9) * 3, rnd(1, 8) * 3 + 1]), r = t % 3 === 0 && t / 3 < 10 ? t / 3 : -1;
+      return mkQ("Dispara a lo que imprime", `int find(int t) {\n  for (int i = 0; i < 10; i++)\n    if (i * 3 == t) return i;\n  return -1;\n}\ncout << find(${t});`,
+        r, [r === -1 ? Math.floor(t / 3) : t, r === -1 ? 9 : -1, 10],
+        r === -1 ? `Ningún i·3 da ${t}: el ciclo termina y se llega al \`return -1\`.` : `En i = ${r}, i·3 = ${t}: \`return\` sale de la función (y del ciclo) de inmediato.`);
+    },
+    function () {
+      return mkQ("Dispara a lo que imprime", "for (int i = 0; i < 3; i++) {\n  switch (i) {\n    case 1: break;\n    default: cout << i;\n  }\n}",
+        "02", ["0", "012", "01"],
+        "Dentro de un `switch`, `break` sale solo del switch, no del `for`. El ciclo sigue: imprime 0 y 2 (el 1 entra al case y sale).");
+    },
+    function () {
+      return mkQ("Dispara: ¿qué pasa?", "string s = \"a\";\nswitch (s) {\n  case \"a\": cout << 1; break;\n}",
+        "No compila", ["1", "Nada", "a"],
+        "`switch` solo acepta tipos enteros (int, char, …). Un `string` hay que compararlo con `if`.");
+    },
+    function () {
+      const a = pick(["A", "X"]), b = pick(["B", "Y"]);
+      return mkQ("Dispara a lo que imprime", `goto fin;\ncout << "${a}";\nfin:\ncout << "${b}";`,
+        b, [a + b, a, "No compila"],
+        `\`goto fin\` salta a la etiqueta: la línea que imprime "${a}" nunca se ejecuta.`);
+    },
+    function () {
+      const x = rnd(1, 4), r = x === 1 ? 10 : x === 2 ? 20 : 0;
+      return mkQ("Dispara a lo que imprime", `int f(int x) {\n  switch (x) {\n    case 1: return 10;\n    case 2: return 20;\n  }\n  return 0;\n}\ncout << f(${x});`,
+        r, [10, 20, 0, 30].filter(v => v !== r),
+        "`return` dentro de un case sale de la función entera (no hace falta `break`). Si ningún case coincide, sigue después del switch.");
+    },
+    function () {
+      const a = rnd(3, 9);
+      return mkQ("Dispara al valor final de `c`", `int c = 0;\nfor (;;) {\n  if (++c == ${a}) break;\n}`,
+        a, [a - 1, a + 1, 0],
+        `\`for (;;)\` es un ciclo sin condición: sale solo con \`break\`, cuando c llega a ${a}.`);
     }
   ];
 
@@ -1571,6 +2479,65 @@
       return mkQ("Dispara a lo que imprime", "int main() {\n  int local[3];\n  cout << local[0];\n}",
         "indeterminado", [0, 3, "No compila"],
         "Un arreglo local sin inicializar tiene valores indeterminados. Uno global sí parte en cero.");
+    },
+    function () {
+      const v = Array.from({ length: 5 }, () => rnd(1, 9)), s = v.reduce((a, b) => a + b, 0);
+      return mkQ("Dispara al valor final de `s`", `int v[5] = {${v.join(", ")}};\nint s = 0;\nfor (int i = 0; i < 5; i++)\n  s += v[i];`,
+        s, [s - v[4], s - v[0], v[4]],
+        `Recorre los 5 elementos (índices 0 a 4) y los suma: ${v.join(" + ")} = ${s}.`);
+    },
+    function () {
+      const a = rnd(2, 9), k = rnd(1, 4);
+      return mkQ(`Dispara al valor de \`v[${k}]\``, `int v[5] = {${a}};`,
+        0, [a, "indeterminado", "No compila"],
+        `Si la lista tiene menos valores que el arreglo, el resto se llena con 0. Solo v[0] vale ${a}.`);
+    },
+    function () {
+      const n = rnd(3, 8), v = Array.from({ length: n }, () => rnd(1, 9));
+      return mkQ("Dispara a lo que imprime", `int v[] = {${v.join(", ")}};\ncout << sizeof(v) / sizeof(v[0]);`,
+        n, [n * 4, n - 1, 4],
+        `\`sizeof(v)\` es el tamaño total en bytes y \`sizeof(v[0])\` el de un elemento: la división da la cantidad de elementos, ${n}.`);
+    },
+    function () {
+      const m = [[rnd(1, 9), rnd(1, 9), rnd(1, 9)], [rnd(10, 19), rnd(10, 19), rnd(10, 19)]], i = rnd(0, 1), j = rnd(0, 2);
+      return mkQ(`Dispara al valor de \`m[${i}][${j}]\``, `int m[2][3] = {{${m[0].join(", ")}},\n               {${m[1].join(", ")}}};`,
+        m[i][j], [m[1 - i][j], m[i][(j + 1) % 3], j < 2 ? m[j][i] : m[1 - i][(j + 2) % 3]].filter(x => x !== m[i][j]).concat([m[i][j] + 1]),
+        `El primer índice es la fila (desde 0) y el segundo la columna: fila ${i}, columna ${j}.`);
+    },
+    function () {
+      const v = shuffle([rnd(1, 9), rnd(10, 30), rnd(31, 60), rnd(61, 99)]), mx = Math.max(...v);
+      return mkQ("Dispara al valor final de `m`", `int v[4] = {${v.join(", ")}};\nint m = v[0];\nfor (int i = 1; i < 4; i++)\n  if (v[i] > m) m = v[i];`,
+        mx, [Math.min(...v), v[3] === mx ? v[0] : v[3], v[0] === mx ? v[1] : v[0]].filter(x => x !== mx).concat([mx + 1]),
+        `Recorre el arreglo guardando el mayor visto: el máximo es ${mx}.`);
+    },
+    function () {
+      const n = rnd(3, 6);
+      return mkQ(`Dispara: ¿qué pasa al leer \`v[${n}]\`?`, `int v[${n}] = {${Array.from({ length: n }, (_, i) => i + 1).join(", ")}};\ncout << v[${n}];`,
+        "Basura o error", [n, 0, n + 1],
+        `Los índices válidos van de 0 a ${n - 1}. v[${n}] está fuera del arreglo: C++ no lo revisa, y el resultado es indefinido (basura, o el programa cae).`);
+    },
+    function () {
+      const n = rnd(4, 50);
+      return mkQ(`Dispara al último índice válido de \`int v[${n}]\``, "",
+        n - 1, [n, n + 1, 1],
+        `Con ${n} elementos los índices van de 0 a ${n - 1}.`);
+    },
+    function () {
+      return mkQ("Dispara: ¿qué pasa?", "int a[3] = {1, 2, 3};\nint b[3];\nb = a;",
+        "No compila", ["b queda {1, 2, 3}", "b queda {0, 0, 0}", "Solo copia b[0]"],
+        "Los arreglos no se pueden asignar completos con `=`. Hay que copiarlos elemento por elemento (con un ciclo).");
+    },
+    function () {
+      const v = Array.from({ length: 4 }, () => rnd(1, 9));
+      return mkQ("Dispara a lo que imprime", `int v[4] = {${v.join(", ")}};\nfor (int i = 3; i >= 0; i--)\n  cout << v[i];`,
+        v.slice().reverse().join(""), [v.join(""), v.slice(1).reverse().join(""), v.slice().reverse().join("") + "0"].filter((s, i, a) => a.indexOf(s) === i),
+        "El ciclo parte en el último índice (3) y baja hasta 0: imprime el arreglo al revés.");
+    },
+    function () {
+      const v = Array.from({ length: 6 }, () => rnd(1, 20)), k = rnd(5, 12), c = v.filter(x => x > k).length;
+      return mkQ("Dispara al valor final de `c`", `int v[6] = {${v.join(", ")}};\nint c = 0;\nfor (int i = 0; i < 6; i++)\n  if (v[i] > ${k}) c++;`,
+        c, [6 - c, c + 1, v.filter(x => x >= k).length === c ? (c ? c - 1 : 6) : v.filter(x => x >= k).length].filter(x => x !== c).concat([c + 2]),
+        `Cuenta los elementos mayores que ${k}: ${v.filter(x => x > k).join(", ") || "ninguno"}.`);
     }
   ];
 
@@ -1633,6 +2600,72 @@
       return mkQ("¿Qué carácter marca el fin de una cadena C?", "",
         "'\\0'", ["'0'", "'\\n'"],
         "El carácter nulo `'\\0'` (código 0), no el dígito '0' (código 48).", 3);
+    },
+    function () {
+      const w = pick(["Hola", "Bono", "Chile", "Tasa", "C++"]);
+      return mkQ("¿Qué imprime?", `char s[] = "${w}";\ncout << strlen(s);`,
+        w.length, [w.length + 1, 20],
+        `\`strlen\` cuenta los caracteres hasta el '\\0', sin contarlo: ${w.length}.`, 3);
+    },
+    function () {
+      const w = pick(["Hola", "Bono", "Chile"]), n = pick([10, 20, 30]), ask = pick(["sizeof", "strlen"]);
+      return mkQ("¿Qué imprime?", `char s[${n}] = "${w}";\ncout << ${ask}(s);`,
+        ask === "sizeof" ? n : w.length, ask === "sizeof" ? [w.length, w.length + 1] : [n, w.length + 1],
+        `\`sizeof\` mide el arreglo completo (${n} bytes); \`strlen\` cuenta el texto hasta el '\\0' (${w.length}).`, 3);
+    },
+    function () {
+      const [a, b] = pick([["Hola", "Chao"], ["Bono", "Swap"], ["Uno", "Dos"]]);
+      return mkQ("¿Qué imprime?", `char s[20] = "${a}";\nstrcpy(s, "${b}");\ncout << s;`,
+        b, [a + b, "No compila"],
+        "`strcpy` copia la segunda cadena sobre la primera, reemplazando su contenido (con su '\\0').", 3);
+    },
+    function () {
+      const w = pick(["Santiago", "Arcade", "Puntero", "Memoria"]), k = rnd(0, w.length - 1);
+      return mkQ("¿Qué imprime?", `char s[] = "${w}";\ncout << s[${k}];`,
+        w[k], [w[k + 1] && w[k + 1] !== w[k] ? w[k + 1] : "\\0", k > 0 && w[k - 1] !== w[k] ? w[k - 1] : w.length],
+        `Los índices parten en 0: s[${k}] es el carácter número ${k + 1}, '${w[k]}'.`, 3);
+    },
+    function () {
+      const w = pick(["Hola", "Chile", "Arcade", "Bono"]), k = rnd(1, w.length - 2);
+      return mkQ("¿Qué imprime?", `char s[] = "${w}";\ns[${k}] = '\\0';\ncout << s;`,
+        w.slice(0, k), [w, w.slice(0, k + 1)],
+        `\`cout\` imprime hasta el primer '\\0'. Al ponerlo en la posición ${k}, la cadena se corta ahí: "${w.slice(0, k)}".`, 3);
+    },
+    function () {
+      const [a, b] = pick([["bono", "bono"], ["bono", "Bono"], ["swap", "swaps"]]), eq = a === b;
+      return mkQ("¿Qué imprime?", `char a[] = "${a}", b[] = "${b}";\nif (strcmp(a, b) == 0) cout << "igual";\nelse cout << "distinto";`,
+        eq ? "igual" : "distinto", [eq ? "distinto" : "igual", "No compila"],
+        eq ? "`strcmp` devuelve 0 cuando las cadenas son iguales." : "`strcmp` distingue mayúsculas y largo: solo devuelve 0 si son idénticas.", 3);
+    },
+    function () {
+      const w = pick(["abc", "Hola", "C++", "Bono", "Chile"]);
+      return mkQ("¿Qué imprime?", `char s[] = "${w}";\ncout << sizeof(s);`,
+        w.length + 1, [w.length, 8],
+        `Un \`char[]\` sin tamaño toma el del literal, que incluye el '\\0' final: ${w.length} + 1 = ${w.length + 1}.`, 3);
+    },
+    function () {
+      const w = pick(["Hola", "Arcade", "C++", "Chile"]);
+      return mkQ("¿Qué imprime?", `char s[] = "${w}";\nint n = 0;\nwhile (s[n] != '\\0') n++;\ncout << n;`,
+        w.length, [w.length + 1, w.length - 1],
+        `Avanza hasta encontrar el '\\0': así se calcula el largo a mano (lo mismo que \`strlen\`).`, 3);
+    },
+    function () {
+      const w = pick(["hi", "ok", "C"]);
+      return mkQ("¿Qué imprime?", `char a[] = "${w}", b[] = "${w}";\ncout << (a == b);`,
+        0, [1, "No compila"],
+        "`==` entre arreglos compara sus DIRECCIONES, no el texto: son dos arreglos distintos. Para comparar el contenido se usa `strcmp`.", 3);
+    },
+    function () {
+      const [a, b] = pick([["ab", "cde"], ["Ho", "la"], ["C", "++"], ["bo", "nos"]]);
+      return mkQ("¿Qué imprime?", `char s[20] = "${a}";\nstrcat(s, "${b}");\ncout << strlen(s);`,
+        a.length + b.length, [a.length, 20],
+        `\`strcat\` agrega "${b}" al final: "${a + b}" tiene ${a.length + b.length} caracteres.`, 3);
+    },
+    function () {
+      const w = pick(["hola", "bono", "tasa", "chile"]);
+      return mkQ("¿Qué imprime?", `char s[] = "${w}";\nfor (int i = 0; s[i] != '\\0'; i++)\n  s[i] = s[i] - 32;\ncout << s;`,
+        w.toUpperCase(), [w, w.toUpperCase()[0] + w.slice(1)],
+        "En ASCII cada minúscula está 32 lugares después de su mayúscula: el ciclo pasa toda la palabra a mayúsculas.", 3);
     }
   ];
 
@@ -1665,6 +2698,10 @@
       quiz: n => sorterQuiz(items, bins, n, ask)
     };
   }
+
+  // Nombre de cada banco para recordar qué casos salieron hace poco.
+  Object.entries({ VAR_GENS, NUM_GENS, TEXT_GENS, ARITH_GENS, LOGIC_GENS, IO_GENS, FUNC_GENS, ARG_GENS, REC_GENS,
+    LOOP_GENS, JUMP_GENS, ARRAY_GENS, CSTR_GENS, STRUCT_ITEMS, FILE_ITEMS, IFACE_ITEMS }).forEach(([k, arr]) => { arr.key = k; });
 
   const CAMPAIGN = [
     // Bloque 1
