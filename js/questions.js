@@ -756,8 +756,8 @@
 
     ["3", "Paso por valor significa que la función recibe…", ["Una copia del argumento", "La dirección del argumento", "Un alias del argumento", "Un puntero nulo"], 0,
       "Por valor = copia. Cambiarla dentro de la función no afecta la variable original."],
-    ["3", "¿Cuándo conviene pasar por referencia `const&`?", ["Objetos grandes que no se modifican", "Enteros que se modifican", "Siempre con int", "Nunca"], 0,
-      "`const&` evita copiar algo pesado (como un vector o string) y garantiza que la función no lo cambie."],
+    ["3", "¿Qué decide si un argumento se pasa por valor o por referencia?", ["El `&` en la declaración del parámetro", "Cómo se escribe la llamada", "El tipo de retorno", "Si la variable es global"], 0,
+      "La llamada se escribe igual en ambos casos: `duplicate(x, y, z)`. Lo decide la declaración: `int a` recibe una copia, `int& a` se refiere a la variable original."],
     ["3", "¿Qué es la sobrecarga de funciones?", ["Mismo nombre, distintos parámetros", "Una función que se llama a sí misma", "Una función sin retorno", "Una función en el .h"], 0,
       "Sobrecarga: varias funciones con el mismo nombre que se distinguen por el número o tipo de parámetros."],
     ["3", "¿Qué necesita toda función recursiva para terminar?", ["Un caso base", "Un ciclo for", "Un puntero", "Un return void"], 0,
@@ -775,13 +775,13 @@
     ["4", "¿Cuál es el índice del primer elemento de un arreglo en C++?", ["0", "1", "-1", "Depende del tipo"], 0,
       "Los arreglos parten en 0. Un arreglo de tamaño n va de 0 a n − 1."],
     ["3", "¿Qué hace una función declarada `inline`?", ["Sugiere copiar su cuerpo donde se llama", "La hace recursiva", "La vuelve privada", "La ejecuta en paralelo"], 0,
-      "Es una sugerencia al compilador para evitar el costo de la llamada; se usa en funciones cortas y va en el header."],
+      "`inline` se escribe en la definición y no obliga a nada: el compilador decide si reemplaza la llamada por el cuerpo. La forma de llamarla no cambia."],
     ["3", "¿Qué es un prototipo de función?", ["Su declaración sin cuerpo, terminada en ;", "Una función vacía", "La primera versión del programa", "Un puntero a función"], 0,
       "El prototipo le avisa al compilador el nombre, tipos de parámetros y retorno antes de que la función se defina."],
-    ["4", "Al pasar un arreglo a una función…", ["Se pasa su dirección: la función puede modificarlo", "Se copia entero", "No se puede", "Se convierte en string"], 0,
-      "El arreglo 'decae' a un puntero a su primer elemento. Por eso también conviene pasar su tamaño."],
-    ["4", "¿Qué función compara dos cadenas C?", ["strcmp", "strlen", "strcat", "strcpy"], 0,
-      "`strcmp` entrega 0 si son iguales. Con cadenas C, `==` compara direcciones, no el texto."],
+    ["4", "En `int billy[5];`, ¿qué índices son válidos?", ["Del 0 al 4", "Del 1 al 5", "Del 0 al 5", "Solo el 5"], 0,
+      "En la declaración, [5] es la cantidad de elementos. Al acceder, los índices van de 0 a 4; billy[5] se sale del arreglo y C++ no lo revisa."],
+    ["4", "`char word[6] = \"Hello\";` y después `word = \"Bye\";`…", ["No compila: un arreglo no se asigna completo", "word queda en Bye", "word queda en Byelo", "Error al ejecutar"], 0,
+      "Inicializar no es asignar. Un arreglo de `char` solo se puede cambiar elemento por elemento; `std::string` sí acepta `=`."],
     ["3", "Los argumentos por defecto deben ir…", ["Al final de la lista de parámetros", "Al inicio", "En cualquier orden", "Solo en el .cpp"], 0,
       "Si un parámetro tiene valor por defecto, todos los que vienen después también deben tenerlo."],
 
@@ -892,12 +892,12 @@
       explain: "El enlazador (linker) junta los `.o` y las bibliotecas en el ejecutable final." },
     { code: "#include \"calculations.h\"", ask: "¿Quién procesa esta línea?", bin: "pre",
       explain: "Con comillas o con `< >`, `#include` es una directiva: el preprocesador pega ahí el contenido del archivo." },
-    { code: "#ifdef DEBUG\n  cout << \"x = \" << x;\n#endif", ask: "¿Quién decide si el `cout` queda en el programa?", bin: "pre",
-      explain: "`#ifdef` es compilación condicional: el preprocesador deja o borra esas líneas antes de que el compilador las vea." },
-    { code: "#define MAX(a, b) ((a) > (b) ? (a) : (b))", ask: "¿Quién expande esta macro?", bin: "pre",
-      explain: "Una macro con parámetros sigue siendo reemplazo de texto, y lo hace el preprocesador." },
-    { code: "#undef PI", ask: "¿Quién procesa esta línea?", bin: "pre",
-      explain: "Empieza con `#`: es una directiva. `#undef` borra una macro definida antes." },
+    { code: "#define TASA 0.05\ndouble r = TASA * 2;", ask: "¿Quién reemplaza `TASA` por `0.05`?", bin: "pre",
+      explain: "`#define` crea una macro: el preprocesador sustituye `TASA` por su texto en cada uso, antes de compilar." },
+    { code: "#include <cmath>", ask: "¿Quién copia las declaraciones de `pow` en el archivo?", bin: "pre",
+      explain: "`#include` es una directiva: el preprocesador pega ahí el contenido del header `<cmath>`, donde está declarada `pow`." },
+    { code: "int 2result = 5;", ask: "¿Quién reclama por este error?", bin: "comp",
+      explain: "Un identificador no puede empezar con un dígito. Es un error de compilación." },
     { code: "int x = \"hola\";", ask: "¿Quién reclama por este error?", bin: "comp",
       explain: "Tipos incompatibles: una cadena no se puede guardar en un `int`. Lo detecta el compilador." },
     { code: "if (x > 0 {\n  cout << x;\n}", ask: "¿Quién reclama por este error?", bin: "comp",
@@ -906,8 +906,8 @@
       explain: "Falta el `;` después de `return 0`. Error de sintaxis: compilador." },
     { code: "double r = sqrt(2.0);   // sin #include <cmath>", ask: "¿Quién reclama por este error?", bin: "comp",
       explain: "Sin el header, el compilador no conoce `sqrt` (\"was not declared in this scope\")." },
-    { code: "int v[3] = {1, 2, 3, 4};", ask: "¿Quién reclama por este error?", bin: "comp",
-      explain: "Más valores que espacios en el arreglo: el compilador lo rechaza." },
+    { code: "int x = 5;\nint x = 7;", ask: "¿Quién reclama por este error?", bin: "comp",
+      explain: "No se puede declarar dos veces el mismo nombre en el mismo ámbito. Lo detecta el compilador." },
     { code: "// main.cpp y test.cpp tienen los dos:\nint main() { ... }", ask: "¿Quién reclama al armar el programa con los dos archivos?", bin: "link",
       explain: "Cada archivo compila bien por separado, pero al unirlos hay dos `main`: \"multiple definition of main\", error del enlazador." },
     { code: "// calc.h:   double tax(double x);\n// calc.cpp: double tax(double x, double r) { ... }\nint main() { return tax(5.0); }", ask: "¿Quién reclama por este error?", bin: "link",
@@ -1027,12 +1027,10 @@
         `\`= ${b}\` solo inicializa a \`${q}\`. \`${p}\` es local y queda sin inicializar: su valor es indeterminado.`, 3);
     },
     function () {
-      const v = vars(1)[0], k = rnd(2, 9), bad = pick([true, false]);
-      return bad
-        ? mkQ("¿Qué pasa?", `int ${v}{${k}.5};`, "No compila", [k, k + 1],
-          `Las llaves no aceptan conversiones que pierden información: un \`double\` como ${k}.5 no entra a un \`int\` así. Con \`= ${k}.5\` sí compila (y queda ${k}).`, 3)
-        : mkQ("¿Qué imprime?", `int ${v}{${k}};\ncout << ${v};`, k, ["No compila", 0],
-          `\`int ${v}{${k}}\` es inicialización con llaves: equivale a \`int ${v} = ${k}\`.`, 3);
+      const [p, q, r] = vars(3), a = rnd(5, 9), b = rnd(1, 4);
+      return mkQ("¿Cuál de estas líneas NO es una inicialización?", `int ${p} = ${a};\nint ${q}(${b});\nint ${r};\n${r} = ${p} - ${q};`,
+        `${r} = ${p} - ${q};`, [`int ${q}(${b});`, `int ${p} = ${a};`],
+        `\`int ${p} = ${a}\` (por copia) e \`int ${q}(${b})\` (directa) inicializan al declarar. \`${r} = ${p} - ${q};\` es una asignación posterior: actualiza una variable que ya existía.`, 3);
     },
     function () {
       const good = pick(["_total", "result_2", "tasaAnual", "precio_final", "x1", "TasaUSD"]);
@@ -1154,10 +1152,10 @@
         `${n} = ${Math.floor(n / 16)}·16 + ${n % 16}, o sea ${h} en base 16.`);
     },
     function () {
-      const n = rnd(5, 31), b = n.toString(2);
-      return mkQ("Dispara al valor de `x` (en decimal)", `int x = 0b${b};`,
-        n, [Number(b) > 1000 ? n + 2 : Number(b), n * 2, n - 1],
-        `\`0b\` indica base 2 (desde C++14): ${b.split("").map((d, i, a) => d === "1" ? 2 ** (a.length - 1 - i) : null).filter(x => x !== null).join(" + ")} = ${n}.`);
+      const n = rnd(20, 120), o = n.toString(8);
+      return mkQ(`Dispara al literal octal que vale ${n}`, "",
+        `0${o}`, [`0${n}`, `0x${o}`, `0${(n + 1).toString(8)}`],
+        `Un 0 inicial indica base 8: ${n} = ${o.split("").map((d, i, a) => `${d}·8^${a.length - 1 - i}`).join(" + ")}, o sea 0${o}.`);
     },
     function () {
       const d = pick(["09", "08", "019", "0128"]);
@@ -1166,10 +1164,9 @@
         `El 0 inicial pide un literal octal, y en base 8 no existen los dígitos 8 ni 9.`);
     },
     function () {
-      const n = rnd(3, 12), t = pick([["int", 4], ["double", 8], ["char", 1], ["short", 2]]);
-      return mkQ("Dispara al valor de `sizeof(v)`", `${t[0]} v[${n}];   // sizeof(${t[0]}) == ${t[1]}`,
-        n * t[1], [n, t[1], n * t[1] + t[1]],
-        `\`sizeof\` de un arreglo mide el arreglo completo: ${n} elementos × ${t[1]} bytes = ${n * t[1]}.`);
+      return mkQ("Dispara a lo que imprime en CUALQUIER compilador", "cout << sizeof(char);",
+        1, [2, 4, 8],
+        "`sizeof(char)` es siempre 1 byte. Los tamaños de `int`, `double`, etc. dependen de la implementación: hay que consultarlos con `sizeof`.");
     },
     function () {
       const l = pick([["75UL", "unsigned long", "U = unsigned y L = long."], ["3.5L", "long double", "Un literal de punto flotante con L es `long double`."],
@@ -1331,9 +1328,9 @@
     },
     function () {
       const a = rnd(1, 5), b = rnd(2, 6);
-      return mkQ("¿Qué imprime?", `#define DOBLE(x) x * 2\ncout << DOBLE(${a} + ${b});`,
+      return mkQ("¿Qué imprime?", `#define TOTAL ${a} + ${b}\ncout << TOTAL * 2;`,
         a + b * 2, [(a + b) * 2, "No compila"],
-        `La macro solo reemplaza texto: queda \`${a} + ${b} * 2\` = ${a + b * 2}. Por eso en las macros se ponen paréntesis: \`((x) * 2)\`.`, 3);
+        `La macro solo sustituye texto: queda \`${a} + ${b} * 2\` = ${a + b * 2}. Una constante \`const int TOTAL = ${a} + ${b};\` sí daría ${(a + b) * 2}.`, 3);
     },
     function () {
       const [a, b] = [rnd(1, 9), rnd(1, 9)];
@@ -1602,9 +1599,9 @@
     },
     function () {
       const w = rnd(2, 9), f = pick([".1", ".5", ".8", ".99"]);
-      return mkQ("Dispara a lo que imprime", `cout << static_cast<int>(${w}${f});`,
+      return mkQ("Dispara a lo que imprime", `cout << int(${w}${f});`,
         w, [w + 1, `${w}${f}`, "No compila"],
-        "Convertir a `int` trunca: se descarta la parte decimal, no se redondea.");
+        "`int(x)` es la notación funcional de la conversión (igual que `(int) x`): descarta la parte decimal, no redondea.");
     },
     function () {
       const x = rnd(1, 15), r = x > 10 ? "alto" : x > 5 ? "medio" : "bajo";
@@ -1719,10 +1716,10 @@
         "Cada `endl` corta la línea. " + (extra ? "Hay dos cortes: A, B y C quedan en tres líneas." : "Hay un solo corte: \"AB\" y luego \"C\"."), 3);
     },
     function () {
-      const n = rnd(1, 99), w = pick([4, 5, 6]), s = String(n).padStart(w, "·");
-      return mkQ("¿Qué imprime? (· = espacio)", `cout << setw(${w}) << ${n};`,
-        s, [String(n).padEnd(w, "·"), String(n)],
-        `\`setw(${w})\` reserva ${w} columnas para lo que sigue y, por defecto, lo alinea a la derecha rellenando con espacios.`, 3);
+      const [a, b] = pick([["Ana", "Colo-Colo"], ["Luis", "La U"], ["Sofía", "Católica"]]);
+      return mkQ("¿Qué imprime?", `string answer;\ngetline(cin, answer);\ngetline(cin, answer);\n// entrada: ${a}⏎${b}⏎\ncout << answer;`,
+        b, [a, a + b],
+        "Cada `getline` lee una línea completa y la segunda REEMPLAZA el contenido anterior de `answer`.", 3);
     },
     function () {
       const a = rnd(5, 40), b = rnd(5, 40), c = rnd(5, 40);
@@ -1768,8 +1765,8 @@
       explain: "`main` usa la función: incluye el header y la llama, sin necesitar el cuerpo." },
     { code: "#endif", ask: "¿En qué archivo va?", bin: ".h",
       explain: "`#endif` cierra la guarda de inclusión al final del header." },
-    { code: "inline int square(int x) { return x * x; }", ask: "¿En qué archivo va una función `inline`?", bin: ".h",
-      explain: "El cuerpo de una función `inline` debe verse en cada archivo que la usa, así que va en el header." },
+    { code: "double add(double, double);   // sin nombres", ask: "¿En qué archivo va este prototipo?", bin: ".h",
+      explain: "Un prototipo puede omitir los nombres de los parámetros; sigue siendo una declaración y va en el header." },
     { code: "double discountFactor(double r, int t);", ask: "¿En qué archivo va este prototipo?", bin: ".h",
       explain: "Los prototipos de la interfaz van en el header." },
     { code: "double discountFactor(double r, int t) {\n  return 1.0 / std::pow(1 + r, t);\n}", ask: "¿En qué archivo va?", bin: ".cpp",
@@ -1977,9 +1974,10 @@
         "`a` es copia (x sigue en 1) y `b` es referencia (y pasa a 20). 1 + 20 = 21.");
     },
     function () {
-      return mkQ("Dispara: ¿qué pasa?", "void f(const int& a) {\n  a = 5;\n}",
-        "No compila", ["a = 5", "Nada", "Error al ejecutar"],
-        "`const&` evita la copia pero protege el original: dentro de la función no se puede modificar.");
+      const x = rnd(2, 9);
+      return mkQ("Dispara al valor final de `x`", `void inc(int& n) { n++; }\n\nint x = ${x};\ninc(x);\ninc(x);`,
+        x + 2, [x, x + 1, 2 * x],
+        `Con \`&\`, \`n\` es la misma variable \`x\`: cada llamada la incrementa. ${x} + 2 = ${x + 2}.`);
     },
     function () {
       const x = rnd(2, 9), ref = pick([true, false]);
@@ -2018,10 +2016,10 @@
         `\`a\` y \`b\` son los dos referencias a la MISMA variable x. Primero x = ${x} + ${x} = ${2 * x}; luego x = ${2 * x} − ${2 * x} = 0.`);
     },
     function () {
-      const k = rnd(2, 20);
-      return mkQ("Dispara a lo que imprime", `int dbl(const int& v) { return 2 * v; }\n\ncout << dbl(${k});`,
-        2 * k, [k, "No compila", 0],
-        "Una referencia `const` sí acepta un literal: no lo va a modificar. Sirve para pasar sin copiar.");
+      const x = rnd(2, 9);
+      return mkQ("Dispara al valor final de `x`", `void f(int a, int& b) {\n  a++;\n  b++;\n}\nint x = ${x};\nf(x, x);`,
+        x + 1, [x, x + 2, 2 * x],
+        `\`a\` es una copia de x y \`b\` es x misma: solo \`b++\` llega a x. Queda en ${x + 1}.`);
     },
     function () {
       const v = shuffle([rnd(1, 9), rnd(10, 19), rnd(20, 29)]), ask = pick(["x", "y", "z"]);
@@ -2049,10 +2047,10 @@
         `\`b\` es referencia a y: y = ${x} + ${y} = ${x + y}. \`a\` es copia de x, así que \`a = b\` no cambia x (sigue en ${x}).`);
     },
     function () {
-      const x = rnd(2, 9);
-      return mkQ("Dispara al valor final de `x`", `int x = ${x};\nint& r = x;\nr++;\nx++;`,
-        x + 2, [x + 1, x, 2 * x],
-        `\`r\` y \`x\` son la misma variable con dos nombres: dos incrementos sobre ella. ${x} + 2 = ${x + 2}.`);
+      const a = rnd(17, 60), b = pick([3, 4, 5, 7]);
+      return mkQ("Dispara al valor de `r`", `void divide(int a, int b, int& q, int& r) {\n  q = a / b;\n  r = a % b;\n}\nint q, r;\ndivide(${a}, ${b}, q, r);`,
+        a % b, [Math.floor(a / b), b, a % b + 1],
+        `\`q\` y \`r\` son parámetros de salida (por referencia): la función escribe dos resultados. ${a} = ${b}·${Math.floor(a / b)} + ${a % b}, así que r = ${a % b}.`);
     }
   ];
 
@@ -2072,7 +2070,7 @@
     { code: "int square(int x) { return x * x; }\nint r = inline square(5);", bin: "no compila", explain: "`inline` va en la definición de la función, no en la llamada." },
     { code: "void odd(int a);\nvoid even(int a);\nvoid odd(int a)  { if (a % 2) cout << \"impar\"; else even(a); }\nvoid even(int a) { if (a % 2 == 0) cout << \"par\"; else odd(a); }", bin: "compila", explain: "Recursión mutua: los prototipos permiten que cada función llame a la otra." },
     { code: "void odd(int a)  { if (a % 2) cout << \"impar\"; else even(a); }\nvoid even(int a) { if (a % 2 == 0) cout << \"par\"; else odd(a); }", bin: "no compila", explain: "Sin prototipos, `odd` usa `even` antes de que esté declarada." },
-    { code: "void f(long x);\nvoid f(double x);\nf(3);", bin: "no compila", explain: "Llamada ambigua: convertir 3 (int) a `long` o a `double` cuesta lo mismo, y el compilador no puede elegir." },
+    { code: "void printmessage(void) { cout << \"Hola\"; }\nprintmessage();", bin: "compila", explain: "`printmessage(void)` y `printmessage()` son lo mismo en C++: una función sin parámetros. Se llama con paréntesis vacíos." },
     { code: "void f(int x);\nvoid f(int x, int y);\nf(1, 2);", bin: "compila", explain: "Sobrecarga por número de parámetros: se elige la versión de dos." },
     { code: "int f(int a, int b = 3, int c = 4);\nint r = f(1);", bin: "compila", explain: "b y c toman sus valores por defecto: es como llamar f(1, 3, 4)." },
     { code: "int f(int a, int b = 3, int c);", bin: "no compila", explain: "Después de un parámetro con valor por defecto, todos los siguientes también deben tenerlo." },
@@ -2082,8 +2080,8 @@
     { code: "double avg(double a, double b);\ndouble r = avg(1, 2);", bin: "compila", explain: "Los `int` 1 y 2 se convierten solos a `double` para la llamada." },
     { code: "void show(string s);\nshow(5);", bin: "no compila", explain: "Un `int` no se convierte solo a `string`: no hay una versión de `show` que acepte el 5." },
     { code: "inline void hello() { cout << \"Hi\"; }\nhello();", bin: "compila", explain: "`inline` va en la definición y la llamada se escribe normal." },
-    { code: "void f(int& x);\nf(5);", bin: "no compila", explain: "Una referencia (no const) necesita una variable que pueda modificar; un literal como 5 no sirve." },
-    { code: "void f(const int& x);\nf(5);", bin: "compila", explain: "Una referencia `const` sí acepta un literal, porque promete no modificarlo." }
+    { code: "void f(int a, int b = 2);\nf(1, 2, 3);", bin: "no compila", explain: "La función recibe a lo más 2 argumentos: el valor por defecto completa los que faltan, no acepta de más." },
+    { code: "int divide(int a, int b = 2);   // prototipo\nint divide(int a, int b) { return a / b; }\nint r = divide(9);", bin: "compila", explain: "El valor por defecto se escribe en la declaración; la definición no lo repite. r = 9 / 2 = 4." }
   ];
 
   /* ---------- 12 · Recursión (carrera) ---------- */
@@ -2131,10 +2129,11 @@
         `fib: 0, 1, 1, 2, 3, 5, 8, 13… El de posición ${k} es ${fib(k)}.`, 3);
     },
     function () {
-      const n = rnd(3, 8);
-      return mkQ(`¿Cuánto devuelve \`s(${n})\`?`, "int s(int n) {\n  if (n == 0) return 0;\n  return n + s(n - 1);\n}",
-        n * (n + 1) / 2, [n * (n - 1) / 2, n * n],
-        `s(${n}) = ${Array.from({ length: n }, (_, i) => n - i).join(" + ")} + 0 = ${n * (n + 1) / 2}.`, 3);
+      const n = rnd(3, 5);
+      const down = Array.from({ length: n }, (_, i) => n - i).join("");
+      return mkQ(`¿Qué imprime \`c(${n})\`?`, "void c(int n) {\n  if (n == 0) return;\n  cout << n;\n  c(n - 1);\n}",
+        down, [down.split("").reverse().join(""), String(n)],
+        `Imprime ANTES de la llamada recursiva: sale ${n}, luego c(${n - 1}) imprime el siguiente… hasta el caso base n = 0.`, 3);
     },
     function () {
       const n = rnd(5, 9), out = []; for (let k = n; k > 0; k -= 2) out.push(k);
@@ -2350,7 +2349,7 @@
         "Varias etiquetas `case` seguidas comparten la misma acción.");
     },
     function () {
-      return mkQ("Dispara: ¿qué pasa?", "int k = 2;\nswitch (x) {\n  case k: cout << \"dos\"; break;\n}",
+      return mkQ("Dispara: ¿qué pasa?", "int x = 2, k = 2;\nswitch (x) {\n  case k: cout << \"dos\"; break;\n}",
         "No compila", ["Imprime dos", "Nada", "Error al ejecutar"],
         "Las etiquetas `case` deben ser constantes, no variables.");
     },
@@ -2383,10 +2382,10 @@
         `\`break\` sale solo del ciclo de ADENTRO. Cada una de las ${n} vueltas de afuera suma ${m}: ${n * m}.`);
     },
     function () {
-      const n = rnd(5, 12); let s = 0; for (let i = 1; i <= n; i++) if (i % 2) s += i;
-      return mkQ("Dispara al valor final de `s`", `int s = 0;\nfor (int i = 1; i <= ${n}; i++) {\n  if (i % 2 == 0) continue;\n  s += i;\n}`,
-        s, [n * (n + 1) / 2, n * (n + 1) / 2 - s, s + n],
-        `\`continue\` salta los pares: suma solo los impares hasta ${n} = ${s}.`);
+      const ok = pick([true, false]);
+      return mkQ(`Dispara al código de salida que indica ${ok ? "ÉXITO" : "FALLA"}`, `#include <cstdlib>\nexit(...);`,
+        ok ? "EXIT_SUCCESS" : "EXIT_FAILURE", ok ? ["EXIT_FAILURE", "1", "-1"] : ["EXIT_SUCCESS", "0", "return"],
+        "`exit(EXIT_SUCCESS)` o `exit(0)` indica término exitoso; `exit(EXIT_FAILURE)` indica una falla. En ambos casos termina el programa completo.");
     },
     function () {
       const c = pick(["a", "b", "x"]), r = c === "a" ? "A" : c === "b" ? "B" : "?";
@@ -2444,7 +2443,13 @@
 
   /* ---------- 15 · Arreglos (disparos) ---------- */
   const ARRAY_GENS = [
-    ARR_GENS[0], ARR_GENS[1], ARR_GENS[2], ARR_GENS[3], ARR_GENS[4], ARR_GENS[5], ARR_GENS[6], ARR_GENS[13],
+    ARR_GENS[0], ARR_GENS[1], ARR_GENS[2], ARR_GENS[3], ARR_GENS[4], ARR_GENS[5], ARR_GENS[13],
+    function () {
+      const r = rnd(0, 2), c = rnd(0, 4);
+      return mkQ(`Dispara al valor de \`jimmy[${r}][${c}]\``, "int jimmy[3][5];\nfor (int row = 0; row < 3; ++row)\n  for (int col = 0; col < 5; ++col)\n    jimmy[row][col] = (row + 1) * (col + 1);",
+        (r + 1) * (c + 1), [r * c, (r + 1) * c, r * (c + 1), (r + 2) * (c + 1)].filter(x => x !== (r + 1) * (c + 1)),
+        `Los factores parten en 1 pero los índices en 0: (${r} + 1)·(${c} + 1) = ${(r + 1) * (c + 1)}.`);
+    },
     function () {
       const o = shuffle([0, 1, 2]), i = rnd(0, 2);
       return mkQ(`Dispara al valor de \`order[order[${i}]]\``, `int order[3] = {${o.join(", ")}};`,
@@ -2464,10 +2469,10 @@
         `Índice lineal = fila × ancho + columna = ${r}·5 + ${c} = ${r * 5 + c}.`);
     },
     function () {
-      const base = rnd(0x10, 0xf0) * 0x10, k = rnd(1, 4);
-      return mkQ(`Dispara a la dirección de \`a[${k}]\``, `int a[5];      // a[0] está en ${hex(base)}\n               // sizeof(int) == 4`,
-        hex(base + 4 * k), [hex(base + k), hex(base + 2 * k), hex(base + 8 * k)],
-        `Los elementos son contiguos: dirección de a[i] = a[0] + i·4 = ${hex(base)} + ${4 * k} = ${hex(base + 4 * k)}.`);
+      const a = rnd(2, 4), b = rnd(2, 5), c = rnd(2, 6);
+      return mkQ("Dispara a cuántos `char` contiene", `char cubo[${a}][${b}][${c}];`,
+        a * b * c, [a + b + c, a * b, b * c],
+        `Cada dimensión multiplica: ${a}·${b}·${c} = ${a * b * c} elementos. Con un byte por \`char\`, son ${a * b * c} bytes.`);
     },
     function () {
       const v = [10, 20, 30, 40, 50].map(x => x + rnd(0, 5)), i = rnd(0, 2);
@@ -2511,10 +2516,12 @@
         `Recorre el arreglo guardando el mayor visto: el máximo es ${mx}.`);
     },
     function () {
-      const n = rnd(3, 6);
-      return mkQ(`Dispara: ¿qué pasa al leer \`v[${n}]\`?`, `int v[${n}] = {${Array.from({ length: n }, (_, i) => i + 1).join(", ")}};\ncout << v[${n}];`,
-        "Basura o error", [n, 0, n + 1],
-        `Los índices válidos van de 0 a ${n - 1}. v[${n}] está fuera del arreglo: C++ no lo revisa, y el resultado es indefinido (basura, o el programa cae).`);
+      const w = rnd(60, 90), i = rnd(0, 2);
+      const v = [10, 20, 30, 40, 50];
+      const out = w + v[i + 2];
+      return mkQ("Dispara a lo que imprime", `int values[5] = {10, 20, 30, 40, 50};\nint index = ${i};\nvalues[index] = ${w};\ncout << values[index] + values[index + 2];`,
+        out, [v[i] + v[i + 2], w + v[i + 1], w + w],
+        `values[${i}] pasa a ${w}; values[${i + 2}] sigue en ${v[i + 2]}. Escribir un elemento no cambia los demás: ${w} + ${v[i + 2]} = ${out}.`);
     },
     function () {
       const n = rnd(4, 50);
@@ -2576,15 +2583,16 @@
         "\"Hello\" necesita 6 espacios (con `'\\0'`) y el arreglo tiene 5.", 3);
     },
     function () {
-      const p = pick([["\"abc\", \"abd\"", "negativo"], ["\"put\", \"call\"", "positivo"], ["\"bono\", \"bono\"", "0"]]);
-      return mkQ("¿Qué signo tiene el resultado?", `strcmp(${p[0]})`,
-        p[1], ["negativo", "positivo", "0"].filter(x => x !== p[1]),
-        "`strcmp` entrega 0 si son iguales, negativo si la primera va antes en orden alfabético y positivo si va después.", 3);
+      const n = pick(["Ana", "Luis", "Sofía", "Pedro"]);
+      return mkQ("¿Qué imprime?", `char greeting[] = "Hola, ";\nchar name[] = "${n}";\ncout << greeting << name << "!";`,
+        `Hola, ${n}!`, [`Hola,${n}!`, `greeting${n}!`],
+        "`cout` muestra cada arreglo de caracteres hasta su '\\0'. Las inserciones encadenadas pegan los textos tal cual (el espacio venía dentro de \"Hola, \").", 3);
     },
     function () {
-      return mkQ("¿Qué imprime?", "char s[20] = \"Hola\";\nstrcat(s, \"Mundo\");\ncout << s;",
-        "HolaMundo", ["Hola Mundo", "Hola"],
-        "`strcat` pega la segunda cadena al final de la primera, sin agregar espacios.", 3);
+      const n = pick(["Ana", "Bono", "Tasa"]);
+      return mkQ("¿Qué imprime?", `char name[] = "${n}";\nstring text = name;\ntext = text + "!";\ncout << text;`,
+        `${n}!`, ["No compila", n],
+        "Un texto terminado en '\\0' puede inicializar un `std::string`. Desde ahí se usa como cualquier `string` (con `+`).", 3);
     },
     function () {
       return mkQ("¿Cuál permite `s = \"texto\";` después de declararla?", "",
@@ -2602,22 +2610,22 @@
         "El carácter nulo `'\\0'` (código 0), no el dígito '0' (código 48).", 3);
     },
     function () {
-      const w = pick(["Hola", "Bono", "Chile", "Tasa", "C++"]);
-      return mkQ("¿Qué imprime?", `char s[] = "${w}";\ncout << strlen(s);`,
-        w.length, [w.length + 1, 20],
-        `\`strlen\` cuenta los caracteres hasta el '\\0', sin contarlo: ${w.length}.`, 3);
+      const w = pick(["Hola", "Bono", "Chile", "Tasa"]);
+      return mkQ(`¿Cuál es el arreglo más chico que puede guardar "${w}" como cadena C?`, "",
+        `char s[${w.length + 1}]`, [`char s[${w.length}]`, `char s[${w.length - 1}]`],
+        `"${w}" tiene ${w.length} letras y además necesita el '\\0' final: ${w.length} + 1 = ${w.length + 1}.`, 3);
     },
     function () {
-      const w = pick(["Hola", "Bono", "Chile"]), n = pick([10, 20, 30]), ask = pick(["sizeof", "strlen"]);
-      return mkQ("¿Qué imprime?", `char s[${n}] = "${w}";\ncout << ${ask}(s);`,
-        ask === "sizeof" ? n : w.length, ask === "sizeof" ? [w.length, w.length + 1] : [n, w.length + 1],
-        `\`sizeof\` mide el arreglo completo (${n} bytes); \`strlen\` cuenta el texto hasta el '\\0' (${w.length}).`, 3);
+      const w = pick(["Hola", "Bono", "Chile"]), n = pick([10, 20, 30]);
+      return mkQ("¿Qué imprime?", `char s[${n}] = "${w}";\ncout << sizeof(s);`,
+        n, [w.length, w.length + 1],
+        `\`sizeof\` mide la capacidad del arreglo (${n}), no el texto que tiene adentro ("${w}" usa ${w.length} + 1).`, 3);
     },
     function () {
-      const [a, b] = pick([["Hola", "Chao"], ["Bono", "Swap"], ["Uno", "Dos"]]);
-      return mkQ("¿Qué imprime?", `char s[20] = "${a}";\nstrcpy(s, "${b}");\ncout << s;`,
-        b, [a + b, "No compila"],
-        "`strcpy` copia la segunda cadena sobre la primera, reemplazando su contenido (con su '\\0').", 3);
+      const w = pick(["Hola", "Bono", "Tasa", "Chile"]), k = w.length - 1;
+      return mkQ("¿Qué imprime?", `char s[] = "${w}";\ns[0] = s[${k}];\ncout << s;`,
+        w[k] + w.slice(1), [w, w.slice(1) + w[0]],
+        `Cada elemento se puede leer y escribir como una variable: s[0] toma el valor de s[${k}] ('${w[k]}').`, 3);
     },
     function () {
       const w = pick(["Santiago", "Arcade", "Puntero", "Memoria"]), k = rnd(0, w.length - 1);
@@ -2632,10 +2640,10 @@
         `\`cout\` imprime hasta el primer '\\0'. Al ponerlo en la posición ${k}, la cadena se corta ahí: "${w.slice(0, k)}".`, 3);
     },
     function () {
-      const [a, b] = pick([["bono", "bono"], ["bono", "Bono"], ["swap", "swaps"]]), eq = a === b;
-      return mkQ("¿Qué imprime?", `char a[] = "${a}", b[] = "${b}";\nif (strcmp(a, b) == 0) cout << "igual";\nelse cout << "distinto";`,
-        eq ? "igual" : "distinto", [eq ? "distinto" : "igual", "No compila"],
-        eq ? "`strcmp` devuelve 0 cuando las cadenas son iguales." : "`strcmp` distingue mayúsculas y largo: solo devuelve 0 si son idénticas.", 3);
+      const w = pick(["A0B", "x0y", "10"]);
+      return mkQ("¿Qué imprime?", `char s[] = "${w}";\ncout << sizeof(s);`,
+        w.length + 1, [w.length, w.length + 2],
+        `El '0' de adentro es el dígito cero (código 48), no el carácter nulo '\\0'. El literal tiene ${w.length} caracteres + el '\\0' final = ${w.length + 1}.`, 3);
     },
     function () {
       const w = pick(["abc", "Hola", "C++", "Bono", "Chile"]);
@@ -2647,19 +2655,20 @@
       const w = pick(["Hola", "Arcade", "C++", "Chile"]);
       return mkQ("¿Qué imprime?", `char s[] = "${w}";\nint n = 0;\nwhile (s[n] != '\\0') n++;\ncout << n;`,
         w.length, [w.length + 1, w.length - 1],
-        `Avanza hasta encontrar el '\\0': así se calcula el largo a mano (lo mismo que \`strlen\`).`, 3);
+        `Avanza hasta encontrar el '\\0': así se calcula el largo del texto, sin contar el terminador.`, 3);
     },
     function () {
-      const w = pick(["hi", "ok", "C"]);
-      return mkQ("¿Qué imprime?", `char a[] = "${w}", b[] = "${w}";\ncout << (a == b);`,
-        0, [1, "No compila"],
-        "`==` entre arreglos compara sus DIRECCIONES, no el texto: son dos arreglos distintos. Para comparar el contenido se usa `strcmp`.", 3);
+      const [w, ch] = pick([["banana", "a"], ["Chile", "e"], ["arcade", "a"], ["tasa", "a"]]);
+      const cnt = w.split(ch).length - 1;
+      return mkQ("¿Qué imprime?", `char s[] = "${w}";\nint c = 0;\nfor (int i = 0; s[i] != '\\0'; i++)\n  if (s[i] == '${ch}') c++;\ncout << c;`,
+        cnt, [cnt + 1, w.length],
+        `El ciclo recorre la cadena hasta el '\\0' y cuenta las '${ch}': hay ${cnt}.`, 3);
     },
     function () {
-      const [a, b] = pick([["ab", "cde"], ["Ho", "la"], ["C", "++"], ["bo", "nos"]]);
-      return mkQ("¿Qué imprime?", `char s[20] = "${a}";\nstrcat(s, "${b}");\ncout << strlen(s);`,
-        a.length + b.length, [a.length, 20],
-        `\`strcat\` agrega "${b}" al final: "${a + b}" tiene ${a.length + b.length} caracteres.`, 3);
+      const w = pick(["Hola", "Bono", "Tasa"]);
+      return mkQ("¿Cuál de estas líneas NO compila?", `char word[] = "${w}";`,
+        `word = "${w}";`, [`word[0] = 'X';`, `char otra[] = "${w}";`],
+        "Un arreglo nativo se inicializa al declararlo, pero después no se puede asignar completo. Sus elementos sí, uno por uno.", 3);
     },
     function () {
       const w = pick(["hola", "bono", "tasa", "chile"]);
@@ -2777,11 +2786,11 @@
       intro: "Dispara a la salida correcta. Atento a los <code>case</code> sin <code>break</code>." },
       shooter(JUMP_GENS)),
     Object.assign({ id: "c15-arreglos", world: 4, addr: "0x0420", title: "Arreglos", topic: "§13 Arreglos uni y multidimensionales",
-      desc: "Índices, inicialización parcial, matrices, índice lineal y direcciones.",
+      desc: "Índices, inicialización parcial, matrices, índice lineal y tamaño en memoria.",
       intro: "Dispara al valor o a la dirección correcta. Recuerda: los índices parten en 0." },
       shooter(ARRAY_GENS)),
     Object.assign({ id: "c16-cadenas", world: 4, addr: "0x0430", title: "Cadenas estilo C", topic: "§13 Secuencias de caracteres",
-      desc: "'\\0', capacidad, asignación, strlen, strcmp y strcat.",
+      desc: "'\\0', capacidad, inicializar vs. asignar, recorrer y pasar a std::string.",
       intro: "Ponte en el carril correcto para cada cadena C." },
       runner(CSTR_GENS)),
     { id: "jefe", world: 4, addr: "0xDEAD", engine: "shooter", boss: true, final: true, controls: SHOOT,
