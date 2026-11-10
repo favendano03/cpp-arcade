@@ -249,18 +249,25 @@
   function isDone(id) { const st = profile.levels[id]; return !!(st && st.done); }
   // Los niveles normales siempre están abiertos (para estudiar el tema que quieras).
   // Cada jefe se abre al completar los niveles de su mundo; el final, además, pide vencer a los otros 3 jefes.
+  // La campaña tiene secciones (Estructuras y Funciones, Gestión de memoria); los jefes se cuentan dentro de cada una.
+  const secOf = l => l.section || "estructuras";
+  const sectionBosses = l => LEVELS.filter(x => x.boss && !x.final && !x.extra && secOf(x) === secOf(l));
   function isUnlocked(l) {
     if (!l.boss || isDone(l.id)) return true;
     if (!LEVELS.filter(x => x.world === l.world && !x.boss).every(x => isDone(x.id))) return false;
-    if (l.final) return LEVELS.filter(x => x.boss && !x.final && !x.extra).every(x => isDone(x.id));
+    if (l.final) return sectionBosses(l).every(x => isDone(x.id));
     return true;
   }
   function lockText(l) {
-    return l.final ? "Vence a los 3 jefes y completa el bloque 4" : l.extra ? "Completa los niveles de esta sección" : "Completa los 4 niveles de este bloque";
+    if (l.extra) return "Completa los niveles de esta sección";
+    const n = LEVELS.filter(x => x.world === l.world && !x.boss).length;
+    return l.final ? `Vence a los ${sectionBosses(l).length} jefes y completa este bloque` : `Completa los ${n} niveles de este bloque`;
   }
   // El mapa tiene tres vistas: modo de juego → sección de la campaña → niveles.
   let hubView = "modes";
   const VIEW_PARENT = { campaign: "modes", levels: "campaign" };
+  const SECTION_NAME = { estructuras: "Estructuras y Funciones", memoria: "Gestión de memoria" };
+  let hubSection = "estructuras";
   const VIEW_CRUMB = { campaign: "Campaña", levels: "Campaña · Estructuras y Funciones" };
   function setHubView(v) { hubView = v; renderHub(); }
   function showSoon(eyebrow, text) {
@@ -274,9 +281,9 @@
   $("soon-modal").addEventListener("click", e => { if (e.target === $("soon-modal")) closeSoon(); });
   $("hub-back").addEventListener("click", () => setHubView(VIEW_PARENT[hubView] || "modes"));
   $("mode-campaign").addEventListener("click", () => setHubView("campaign"));
-  $("sec-estructuras").addEventListener("click", () => setHubView("levels"));
+  $("sec-estructuras").addEventListener("click", () => { hubSection = "estructuras"; setHubView("levels"); });
+  $("sec-memoria").addEventListener("click", () => { hubSection = "memoria"; setHubView("levels"); });
   $("mode-arcade").addEventListener("click", () => showSoon("Modo Arcade", "Casos cortos y más dinámicos. Este modo está en construcción."));
-  $("sec-memoria").addEventListener("click", () => showSoon("Campaña · Gestión de memoria", "Los niveles de esta sección están en construcción."));
 
   function renderHub() {
     $("hub-name").textContent = profile.name;
@@ -286,12 +293,18 @@
     const camp = LEVELS.filter(l => !l.extra);
     const campDone = camp.filter(l => isDone(l.id)).length;
     $("mode-campaign-meta").textContent = `${campDone}/${camp.length} niveles completados`;
-    $("sec-estructuras-meta").textContent = `${campDone}/${camp.length} completados · 4 bloques y jefe final`;
+    const secMeta = sec => {
+      const lv = camp.filter(l => secOf(l) === sec);
+      const blocks = new Set(lv.map(l => l.world)).size;
+      return `${lv.filter(l => isDone(l.id)).length}/${lv.length} completados · ${blocks} bloques y jefe final`;
+    };
+    $("sec-estructuras-meta").textContent = secMeta("estructuras");
+    $("sec-memoria-meta").textContent = secMeta("memoria");
     $("view-modes").hidden = hubView !== "modes";
     $("view-campaign").hidden = hubView !== "campaign";
     $("level-list").hidden = hubView !== "levels";
     $("hub-nav").hidden = hubView === "modes";
-    $("hub-crumb").textContent = VIEW_CRUMB[hubView] || "";
+    $("hub-crumb").textContent = hubView === "levels" ? "Campaña · " + SECTION_NAME[hubSection] : VIEW_CRUMB[hubView] || "";
     $("soon-modal").hidden = true;
     $("hub-xp").textContent = profile.xp;
     $("hub-stars").textContent = LEVELS.reduce((s, l) => s + ((profile.levels[l.id] || {}).stars || 0), 0) + "/" + LEVELS.length * 3;
@@ -300,6 +313,7 @@
     ol.innerHTML = "";
     let currentWorld = null;
     LEVELS.forEach((l, idx) => {
+      if (secOf(l) !== hubSection) return;
       if (l.world !== currentWorld) {
         currentWorld = l.world;
         const w = WORLDS.find(x => x.n === l.world);

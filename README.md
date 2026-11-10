@@ -18,9 +18,9 @@ Nació como herramienta de estudio para el curso *Programación en Finanzas* (C+
 
 ## Cómo se juega
 
-- **Campaña**: 16 niveles en 4 bloques, con un jefe al final de cada bloque.
-  - **Estructuras y Funciones**: disponible.
-  - **Gestión de memoria**: próximamente.
+- **Campaña**: dos secciones, cada una con un jefe al final de cada bloque y un jefe final.
+  - **Estructuras y Funciones**: 16 niveles en 4 bloques.
+  - **Gestión de memoria**: 16 niveles en 5 bloques (punteros, arreglos y aritmética, punteros especiales, new/delete y malloc/free, y el bono).
 - **Arcade**: casos cortos y rápidos. Próximamente.
 
 Hay tres mecánicas:
@@ -81,7 +81,8 @@ Los niveles normales están siempre abiertos, para estudiar el tema que quieras.
 ```
 index.html             pantallas (inicio, modos, juego, resultado, repaso)
 css/style.css          estilos
-js/questions.js        contenido de los niveles y generadores de preguntas
+js/questions.js        contenido de los niveles y generadores de preguntas (sección 1)
+js/memory.js           niveles de la sección 2, Gestión de memoria
 js/engines.js          motores de juego (clasificador, disparos, carrera, jefes)
 js/app.js              navegación entre pantallas y controles
 js/storage.js          perfiles locales, exportar e importar
@@ -94,7 +95,7 @@ js/audio-test.js       prueba de sonido (se abre con cpparcade.cl/#audio)
 firestore.rules        reglas de seguridad de la base de datos
 ```
 
-Para correrlo en tu computador basta un servidor estático, por ejemplo `python3 -m http.server` en esta carpeta, y abrir `http://localhost:8000`. Para agregar preguntas, edita `js/questions.js`.
+Para correrlo en tu computador basta un servidor estático, por ejemplo `python3 -m http.server` en esta carpeta, y abrir `http://localhost:8000`. Para agregar preguntas, edita `js/questions.js` (sección 1) o `js/memory.js` (sección 2).
 
 ## In English
 

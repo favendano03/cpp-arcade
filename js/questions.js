@@ -2800,34 +2800,8 @@
   }
   CAMPAIGN.filter(l => l.boss).forEach(l => { l.build = () => buildBoss(l); });
 
-  // Contenido extra (otros PPT del curso): memoria y clases, fuera de la campaña.
+  // Contenido extra (otros PPT del curso): clases, fuera de la campaña. La memoria tiene su propia sección (memory.js).
   const EXTRA = [
-    { id: "memoria", world: 5, extra: true, addr: "0x0500", engine: "sorter", controls: SORT,
-      title: "Stack o Heap", topic: "Gestión de memoria", desc: "Manda cada dato a la zona de memoria donde vive. Ojo con las fugas.",
-      intro: "Cae un dato. Guíalo hasta la zona de memoria donde vive. Cada <code>new</code> llena el heap; los <code>delete</code> lo liberan. Si el heap se llena, pierdes una vida por fuga de memoria.",
-      build() {
-        const allocs = shuffle(MEMORY_ITEMS).slice(0, 11);
-        const dels = shuffle(DELETE_ITEMS);
-        const out = [];
-        let heapSeen = 0, d = 0;
-        for (const it of allocs) {
-          out.push(it);
-          if (it.bin === "heap") { heapSeen++; if (heapSeen % 2 === 0) out.push(dels[d++ % dels.length]); }
-        }
-        return { phases: [{ bins: ["stack", "heap"], items: out }] };
-      } },
-    { id: "punteros", world: 5, extra: true, addr: "0x0510", engine: "shooter", controls: SHOOT,
-      title: "Cazapunteros", topic: "Punteros y referencias", desc: "Dispara al valor correcto: *p, &a, p + 2… Esquiva los punteros colgantes.",
-      intro: "Lee el código y dispara a la respuesta correcta antes de que lleguen abajo. Los <code>0xDEAD</code> son punteros colgantes: esquívalos o destrúyelos.",
-      build() { return { questions: fromGens(PTR_GENS, 10), hazards: true }; } },
-    { id: "detective", world: 5, extra: true, addr: "0x0520", engine: "sorter", controls: SORT,
-      title: "Detective de memoria", topic: "Errores de memoria", desc: "¿Está bien, tiene una fuga o deja un puntero colgante?",
-      intro: "Clasifica cada caso: <code>SIN ERROR</code>, <code>FUGA</code> o <code>COLGANTE</code>.",
-      build() { return { phases: [{ bins: ["ok", "fuga", "colgante"], items: cases(DETECTIVE_ITEMS, 10, "¿Qué problema tiene este código?") }] }; } },
-    { id: "jefe-leak", world: 5, extra: true, boss: true, addr: "0xBAD0", engine: "shooter", controls: SHOOT,
-      title: "Jefe: Memory Leak", topic: "Jefe extra de memoria", desc: "Preguntas rápidas de punteros y memoria.",
-      intro: "Memory Leak gotea bloques de heap que nadie libera. Esquívalos y dispara a la letra correcta.",
-      build() { return { questions: bossQuestions(["M"], 7), boss: { label: "LEAK", color: "plum", pattern: "rain", speed: 1.15, rainText: "new" } }; } },
     { id: "clases", world: 6, extra: true, addr: "0x0600", engine: "sorter", controls: SORT,
       title: "Arquitecto de clases", topic: "Clases, .h y .cpp", desc: "Arma la clase Bono: qué va en el .h, en el .cpp y qué es público o privado.",
       intro: "Primera fase: manda cada pieza al archivo donde corresponde. Segunda fase: decide qué miembros de <code>Bono</code> son públicos y cuáles privados.",
@@ -2849,12 +2823,13 @@
 
   window.Content = {
     shuffle,
+    // Herramientas para las otras secciones de la campaña (memory.js).
+    kit: { rnd, pick, shuffle, hex, cout6, vars, mkQ, freshIdx, fromGens, cases, SORT, SHOOT, RUN },
     worlds: [
       { n: 1, name: "Bloque 1 · Bases", desc: "Secciones 1 a 4 del resumen: estructura, variables, tipos y texto." },
       { n: 2, name: "Bloque 2 · Operadores y archivos", desc: "Secciones 5 a 7: operadores, entrada/salida y headers." },
       { n: 3, name: "Bloque 3 · Funciones", desc: "Secciones 8 a 11: funciones, argumentos, interfaces y recursión." },
       { n: 4, name: "Bloque 4 · Control y arreglos", desc: "Secciones 12 y 13: flujo de control, arreglos y cadenas C." },
-      { n: 5, name: "Extra · Memoria", desc: "Material del PPT de gestión de memoria (fuera de la campaña)." },
       { n: 6, name: "Extra · Clases", desc: "Clases y objetos (fuera de la campaña)." }
     ],
     levels: CAMPAIGN.concat(EXTRA)
