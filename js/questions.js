@@ -395,12 +395,10 @@
         "Si inicializas un arreglo con menos valores que su tamaño, el resto se llena con 0.", 3);
     },
     function () {
-      const w = pick(["hola", "bono", "tasa", "call"]);
-      const which = pick(["sizeof", "strlen"]);
-      const val = which === "sizeof" ? w.length + 1 : w.length;
-      return mkQ(`¿Cuánto vale \`${which}(s)\`?`, `char s[] = "${w}";`,
-        val, [which === "sizeof" ? w.length : w.length + 1, w.length + 2],
-        `Una cadena C termina con \`'\\0'\`. \`sizeof\` cuenta los ${w.length + 1} bytes del arreglo (incluido \`'\\0'\`); \`strlen\` cuenta solo los ${w.length} caracteres.`, 3);
+      const n = pick([80, 20, 50]);
+      return mkQ("¿Cuántos caracteres lee como máximo?", `char name[${n}];\ncin >> setw(${n}) >> name;`,
+        n - 1, [n, n + 1],
+        `\`setw(${n})\` limita la extracción a ${n - 1} caracteres, dejando espacio para el '\\0' final.`, 3);
     }
   ];
   function seq(a, last, s) {
@@ -2492,16 +2490,30 @@
         `Recorre los 5 elementos (índices 0 a 4) y los suma: ${v.join(" + ")} = ${s}.`);
     },
     function () {
-      const a = rnd(2, 9), k = rnd(1, 4);
-      return mkQ(`Dispara al valor de \`v[${k}]\``, `int v[5] = {${a}};`,
-        0, [a, "indeterminado", "No compila"],
-        `Si la lista tiene menos valores que el arreglo, el resto se llena con 0. Solo v[0] vale ${a}.`);
+      const n = rnd(2, 4), extra = n + 1, vals = Array.from({ length: extra }, () => rnd(1, 9));
+      return mkQ("Dispara: ¿qué pasa?", `int v[${n}] = {${vals.join(", ")}};`,
+        "No compila", [`v queda {${vals.slice(0, n).join(", ")}}`, `v crece a ${extra}`, "Error al ejecutar"],
+        `La lista no puede tener más valores que la capacidad declarada: ${extra} valores no caben en ${n} elementos. Es un error de compilación.`);
     },
     function () {
-      const n = rnd(3, 8), v = Array.from({ length: n }, () => rnd(1, 9));
-      return mkQ("Dispara a lo que imprime", `int v[] = {${v.join(", ")}};\ncout << sizeof(v) / sizeof(v[0]);`,
-        n, [n * 4, n - 1, 4],
-        `\`sizeof(v)\` es el tamaño total en bytes y \`sizeof(v[0])\` el de un elemento: la división da la cantidad de elementos, ${n}.`);
+      const k = rnd(0, 2), kind = pick(["global", "llaves"]);
+      return kind === "global"
+        ? mkQ("Dispara a lo que imprime", `int global[3];\n\nint main() {\n  cout << global[${k}];\n}`,
+          0, ["indeterminado", 3, "No compila"],
+          "Un arreglo global (duración estática) sin inicializar parte con todos sus elementos en cero. Uno local, en cambio, queda indeterminado.")
+        : mkQ("Dispara a lo que imprime", `int main() {\n  int zero[3] = {};\n  cout << zero[${k}];\n}`,
+          0, ["indeterminado", 3, "No compila"],
+          "Con llaves vacías `{}` todos los elementos quedan en cero, aunque el arreglo sea local.");
+    },
+    function () {
+      const ok = pick([true, false]);
+      return ok
+        ? mkQ("Dispara: ¿qué pasa?", "const int count = 5;\nint billy[count];",
+          "Compila", ["No compila", "Error al ejecutar", "billy tiene 4"],
+          "`count` es una constante conocida al compilar, así que sirve como tamaño de un arreglo fijo: billy tiene 5 elementos.")
+        : mkQ("Dispara: ¿es un arreglo fijo válido en C++ estándar?", "int n;\ncin >> n;\nint billy[n];",
+          "No", ["Sí", "Sí, si n > 0", "Solo si n < 100"],
+          "El tamaño de un arreglo fijo debe ser una expresión constante conocida al compilar. Un valor leído en ejecución no sirve (eso se resuelve con memoria dinámica).");
     },
     function () {
       const m = [[rnd(1, 9), rnd(1, 9), rnd(1, 9)], [rnd(10, 19), rnd(10, 19), rnd(10, 19)]], i = rnd(0, 1), j = rnd(0, 2);
@@ -2524,10 +2536,28 @@
         `values[${i}] pasa a ${w}; values[${i + 2}] sigue en ${v[i + 2]}. Escribir un elemento no cambia los demás: ${w} + ${v[i + 2]} = ${out}.`);
     },
     function () {
-      const n = rnd(4, 50);
-      return mkQ(`Dispara al último índice válido de \`int v[${n}]\``, "",
-        n - 1, [n, n + 1, 1],
-        `Con ${n} elementos los índices van de 0 a ${n - 1}.`);
+      const h = 24, y = pick([100, 10, 50]), tot = y * 365 * h * 60 * 60;
+      const fmt = x => x.toLocaleString("en-US");
+      return mkQ("Dispara a cuántos bytes ocupa", `char century[${y}][365][${h}][60][60];\n// sizeof(char) == 1`,
+        fmt(tot), [fmt(y * 365 * h * 60), fmt(y * 365 * h), fmt(y + 365 + h + 60 + 60)],
+        `Más dimensiones multiplican: ${y}·365·${h}·60·60 = ${fmt(tot)} elementos de 1 byte. Una declaración corta puede pedir un objeto enorme.`);
+    },
+    function () {
+      const r = rnd(0, 2), c = rnd(0, 4);
+      return mkQ(`Dispara: ¿qué es \`jimmy[${r}][${c}]\`?`, "int jimmy[3][5] = {};",
+        "Un solo int", [`La fila ${r}`, `La columna ${c}`, `${(r + 1) * (c + 1)} ints`],
+        `Con un índice por dimensión se llega a un solo elemento: fila ${r} (la ${r + 1}.ª), columna ${c} (la ${c + 1}.ª).`);
+    },
+    function () {
+      return mkQ("Dispara: ¿qué guarda un arreglo?", "int billy[5];",
+        "5 int contiguos", ["5 valores de cualquier tipo", "5 nombres distintos", "Un int con valor 5"],
+        "Un arreglo guarda elementos del MISMO tipo en posiciones contiguas de memoria, bajo un solo nombre.");
+    },
+    function () {
+      const v = Array.from({ length: rnd(3, 7) }, () => rnd(1, 99));
+      return mkQ("Dispara a cuántos elementos tiene `other`", `int other[] = {${v.join(", ")}};`,
+        v.length, [v.length - 1, v.length + 1, "No compila"],
+        `Si se omite el tamaño, el compilador lo infiere del inicializador: ${v.length} valores, ${v.length} elementos.`);
     },
     function () {
       return mkQ("Dispara: ¿qué pasa?", "int a[3] = {1, 2, 3};\nint b[3];\nb = a;",
@@ -2646,10 +2676,15 @@
         `El '0' de adentro es el dígito cero (código 48), no el carácter nulo '\\0'. El literal tiene ${w.length} caracteres + el '\\0' final = ${w.length + 1}.`, 3);
     },
     function () {
-      const w = pick(["abc", "Hola", "C++", "Bono", "Chile"]);
-      return mkQ("¿Qué imprime?", `char s[] = "${w}";\ncout << sizeof(s);`,
-        w.length + 1, [w.length, 8],
-        `Un \`char[]\` sin tamaño toma el del literal, que incluye el '\\0' final: ${w.length} + 1 = ${w.length + 1}.`, 3);
+      return mkQ("Un literal como `\"Hello\"` es…", "",
+        "Arreglo de const char", ["Un std::string", "Un solo char"],
+        "Un literal entre comillas dobles es un arreglo de `const char` terminado en nulo. Por eso sirve para inicializar un `char[]`.", 3);
+    },
+    function () {
+      const w = pick(["Hi", "Bono", "Sol"]), n = 10;
+      return mkQ(`¿Qué parte de \`s\` es texto válido?`, `char s[${n}] = "${w}";`,
+        `s[0] a s[${w.length - 1}]`, [`s[0] a s[${n - 1}]`, `s[0] a s[${w.length}]`],
+        `El texto termina en el '\\0' (s[${w.length}]). Lo que viene después queda fuera del texto válido, aunque el arreglo tenga capacidad ${n}.`, 3);
     },
     function () {
       const w = pick(["Hola", "Arcade", "C++", "Chile"]);
@@ -2666,8 +2701,9 @@
     },
     function () {
       const w = pick(["Hola", "Bono", "Tasa"]);
+      const bad = pick([`word = "${w}";`, `word[] = "${w}";`, `word = {${w.split("").map(c => `'${c}'`).join(", ")}, '\\0'};`]);
       return mkQ("¿Cuál de estas líneas NO compila?", `char word[] = "${w}";`,
-        `word = "${w}";`, [`word[0] = 'X';`, `char otra[] = "${w}";`],
+        bad, [`word[0] = 'X';`, `char otra[] = "${w}";`],
         "Un arreglo nativo se inicializa al declararlo, pero después no se puede asignar completo. Sus elementos sí, uno por uno.", 3);
     },
     function () {
