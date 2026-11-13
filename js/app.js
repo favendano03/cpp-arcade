@@ -52,6 +52,7 @@
   const screens = ["login", "hub", "play", "result", "review", "arcade"];
   function show(name) {
     screens.forEach(s => { $("screen-" + s).hidden = s !== name; });
+    document.body.dataset.screen = name;   // el CSS ajusta el ancho de la página a cada pantalla
     $("btn-sound").hidden = name === "play" || !window.SFX;
     $("gh-link").hidden = name === "play" || name === "arcade";
     if (window.FightBG) { if (name === "login") FightBG.start(); else FightBG.stop(); }
@@ -240,11 +241,21 @@
   }
 
   /* ---------------- Mapa de niveles ---------------- */
-  function starsHTML(n, big) {
+  function starsHTML(n, pop) {
     let s = "";
-    for (let i = 0; i < 3; i++) s += i < n ? "★" : '<span class="off">★</span>';
+    for (let i = 0; i < 3; i++) s += i < n ? (pop ? `<span class="on" style="--i:${i}">★</span>` : "★") : '<span class="off">★</span>';
     return s;
   }
+  // Mapa de puntos: un punto por nivel, agrupados por bloque; los jefes son más grandes.
+  function dotsHTML(levels) {
+    const groups = [];
+    levels.forEach(l => { let g = groups[groups.length - 1]; if (!g || g.world !== l.world) { g = { world: l.world, items: [] }; groups.push(g); } g.items.push(l); });
+    return groups.map(g => `<span class="dot-row">${g.items.map(l => {
+      const st = profile.levels[l.id] || {};
+      return `<i class="dot${l.boss ? " boss" : ""}${st.done ? " done s" + (st.stars || 1) : ""}"></i>`;
+    }).join("")}</span>`).join("");
+  }
+  const MECH = { sorter: "Clasificador", shooter: "Disparos", runner: "Carrera" };
   const WORLDS = window.Content.worlds;
   function isDone(id) { const st = profile.levels[id]; return !!(st && st.done); }
   // Los niveles normales siempre están abiertos (para estudiar el tema que quieras).
@@ -287,19 +298,23 @@
 
   function renderHub() {
     $("hub-name").textContent = profile.name;
+    $("hub-avatar").textContent = profile.name.charAt(0).toUpperCase();
     if (profile.cloud) {
       if (!/save-status (ok|err)/.test($("hub-save").className) || !$("hub-save").textContent) { $("hub-save").textContent = "☁ Avance guardado en tu cuenta"; $("hub-save").className = "save-status ok"; }
     } else { $("hub-save").textContent = "Guardado solo en este equipo"; $("hub-save").className = "save-status"; }
     const camp = LEVELS.filter(l => !l.extra);
     const campDone = camp.filter(l => isDone(l.id)).length;
     $("mode-campaign-meta").textContent = `${campDone}/${camp.length} niveles completados`;
-    const secMeta = sec => {
-      const lv = camp.filter(l => secOf(l) === sec);
+    $("mode-campaign-bar").style.width = (camp.length ? campDone / camp.length * 100 : 0) + "%";
+    $("mode-campaign-art").innerHTML = dotsHTML(camp);
+    ["estructuras", "memoria"].forEach(sec => {
+      const lv = camp.filter(l => secOf(l) === sec), done = lv.filter(l => isDone(l.id)).length;
       const blocks = new Set(lv.map(l => l.world)).size;
-      return `${lv.filter(l => isDone(l.id)).length}/${lv.length} completados · ${blocks} bloques y jefe final`;
-    };
-    $("sec-estructuras-meta").textContent = secMeta("estructuras");
-    $("sec-memoria-meta").textContent = secMeta("memoria");
+      $(`sec-${sec}-meta`).textContent = `${done}/${lv.length} completados · ${blocks} bloques y jefe final`;
+      $(`sec-${sec}-bar`).style.width = (lv.length ? done / lv.length * 100 : 0) + "%";
+      $(`sec-${sec}-art`).innerHTML = dotsHTML(lv);
+    });
+    if (hubView === "modes" && window.ArcadeScene) { try { ArcadeScene.thumb($("mode-arcade-art")); } catch (e) { /* sin miniatura */ } }
     const arcRec = ["facil", "intermedio", "leyenda"].map(d => profile.levels["arcade-" + d]).filter(Boolean);
     $("mode-arcade-meta").textContent = arcRec.length ? `${arcRec.reduce((a, r) => a + (r.plays || 0), 0)} partidas · ${arcRec.filter(r => r.done).length}/3 dificultades superadas` : "Nuevo: la taberna del trader";
     $("view-modes").hidden = hubView !== "modes";
@@ -313,7 +328,7 @@
     $("hub-missed").textContent = profile.missed.length;
     const ol = $("level-list");
     ol.innerHTML = "";
-    let currentWorld = null;
+    let currentWorld = null, num = 0;
     LEVELS.forEach((l, idx) => {
       if (secOf(l) !== hubSection) return;
       if (l.world !== currentWorld) {
@@ -322,19 +337,25 @@
         const total = LEVELS.filter(x => x.world === l.world).length;
         const done = LEVELS.filter(x => x.world === l.world && isDone(x.id)).length;
         const head = document.createElement("li");
-        head.className = "world-head";
-        head.innerHTML = `<span class="eyebrow">${done}/${total} completados</span><h3>${esc(w.name)}</h3><p class="muted">${esc(w.desc)}</p>`;
+        head.className = "world-head" + (done === total ? " complete" : "");
+        head.innerHTML = `<div class="world-top"><h3>${esc(w.name)}</h3><span class="world-count">${done}/${total}</span></div>
+          <p class="muted">${esc(w.desc)}</p><span class="bar" aria-hidden="true"><i style="width:${total ? done / total * 100 : 0}%"></i></span>`;
         ol.appendChild(head);
       }
       const st = profile.levels[l.id] || {};
       const locked = !isUnlocked(l);
       const li = document.createElement("li");
-      li.innerHTML = `<button class="level-card${l.boss ? " boss" : ""}" type="button" ${locked ? "disabled" : ""}>
-          <span class="level-addr">${l.addr}</span>
-          <span class="level-title">${esc(l.title)}</span>
-          <span class="level-desc">${locked ? esc(lockText(l)) + "." : esc(l.topic) + " · " + esc(l.desc)}</span>
+      if (l.boss) li.className = "is-boss";
+      if (!l.boss) num++;
+      li.innerHTML = `<button class="level-card${l.boss ? " boss" : ""}${st.done ? " done" : ""}" type="button" ${locked ? "disabled" : ""}>
+          <span class="level-num" aria-hidden="true">${l.boss ? (locked ? "🔒" : "☠") : String(num).padStart(2, "0")}</span>
+          <span class="level-main">
+            <span class="level-title">${esc(l.title)}</span>
+            <span class="level-desc">${locked ? esc(lockText(l)) + "." : esc(l.topic) + " · " + esc(l.desc)}</span>
+            <span class="level-tags"><span class="chip ${l.boss ? "boss" : l.engine}">${l.boss ? (l.final ? "Jefe final" : "Jefe") : MECH[l.engine] || ""}</span><span class="level-addr">${l.addr}</span></span>
+          </span>
           <span class="level-side">
-            <span class="stars">${locked ? "🔒" : starsHTML(st.stars || 0)}</span>
+            <span class="stars">${locked ? "" : starsHTML(st.stars || 0)}</span>
             <span class="best">${st.best ? "récord " + st.best : locked ? "bloqueado" : "sin jugar"}</span>
           </span>
         </button>`;
@@ -437,6 +458,12 @@
     const full = canvas.parentElement.clientWidth;
     const w = Math.max(230, Math.min(full, avail * W / H));
     if (w < full - 1) canvas.style.width = Math.floor(w) + "px";
+    // El lienzo se dibuja a la resolución con que se muestra: en pantallas grandes el tablero crece sin verse borroso.
+    const k = Math.min(3, Math.max(1, Math.min(w, full) / W * (window.devicePixelRatio || 1)));
+    if (Math.abs(canvas.width - W * k) > 24) {
+      canvas.width = Math.round(W * k); canvas.height = Math.round(H * k);
+      ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
+    }
   }
   window.addEventListener("resize", fitStage);
   if (window.ResizeObserver) new ResizeObserver(() => fitStage()).observe($("prompt"));
@@ -536,6 +563,7 @@
     $("intro-title").textContent = lv.title;
     $("intro-text").innerHTML = lv.intro;
     $("intro-controls").textContent = lv.controls;
+    $("keys-help").textContent = lv.controls + " · Esc: pausa · M: sonido";
     $("intro").hidden = false;
     paused = true;
     show("play");
@@ -581,7 +609,8 @@
     stopGame();
     $("res-eyebrow").textContent = lv.topic;
     $("res-title").textContent = res.completed ? (lv.boss ? "¡Segfault derrotado!" : "Nivel completado") : "Sin vidas";
-    $("res-stars").innerHTML = starsHTML(res.stars);
+    $("res-stars").innerHTML = starsHTML(res.stars, true);
+    document.querySelector("#screen-result .result").classList.toggle("lose", !res.completed);
     $("res-score").textContent = res.score;
     $("res-acc").textContent = `${res.correct}/${res.answered}`;
     $("res-best").textContent = rec.best;

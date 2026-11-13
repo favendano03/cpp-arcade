@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap">
-<link rel="stylesheet" href="css/style.css?v=20261111b">
+<link rel="stylesheet" href="css/style.css?v=20261113a">
 </head>
 <body>
 <div id="app">
@@ -147,15 +147,18 @@
   <!-- ============ MAPA DE NIVELES ============ -->
   <section id="screen-hub" class="screen" hidden>
     <header class="hub-head">
-      <div>
-        <p class="eyebrow">Sesión iniciada</p>
-        <h2 class="hub-name" id="hub-name">Jugador</h2>
-        <p class="save-status" id="hub-save"></p>
+      <div class="hub-who">
+        <span class="avatar big" id="hub-avatar" aria-hidden="true">J</span>
+        <div class="hub-id">
+          <p class="eyebrow">Sesión iniciada</p>
+          <h2 class="hub-name" id="hub-name">Jugador</h2>
+          <p class="save-status" id="hub-save"></p>
+        </div>
       </div>
       <div class="hub-stats">
-        <div><span class="stat-label">XP</span><span class="stat-val" id="hub-xp">0</span></div>
-        <div><span class="stat-label">Estrellas</span><span class="stat-val" id="hub-stars">0</span></div>
-        <div><span class="stat-label">Por repasar</span><span class="stat-val" id="hub-missed">0</span></div>
+        <div class="stat"><span class="stat-label">XP</span><span class="stat-val" id="hub-xp">0</span></div>
+        <div class="stat"><span class="stat-label">Estrellas</span><span class="stat-val" id="hub-stars">0</span></div>
+        <div class="stat"><span class="stat-label">Por repasar</span><span class="stat-val" id="hub-missed">0</span></div>
       </div>
     </header>
 
@@ -167,35 +170,54 @@
     <!-- Paso 1: modo de juego -->
     <div id="view-modes" class="mode-grid">
       <p class="view-title">Elige un modo de juego</p>
-      <button id="mode-campaign" class="mode-card" type="button">
-        <span class="mode-tag">Modo 1</span>
-        <span class="mode-name">Campaña</span>
-        <span class="mode-desc">Niveles ordenados según la materia, con jefes que ponen a prueba lo aprendido.</span>
-        <span class="mode-meta" id="mode-campaign-meta"></span>
-      </button>
-      <button id="mode-arcade" class="mode-card alt" type="button">
-        <span class="mode-tag">Modo 2</span>
-        <span class="mode-name">Arcade</span>
-        <span class="mode-desc">La taberna: un trader desesperado te pide ayuda con su programa en C++. Bonos, forwards y acciones.</span>
-        <span class="mode-meta" id="mode-arcade-meta"></span>
-      </button>
+      <div class="mode-pair">
+        <button id="mode-campaign" class="mode-card has-art" type="button">
+          <span class="mode-art map" id="mode-campaign-art" aria-hidden="true"></span>
+          <span class="mode-body">
+            <span class="mode-tag">Modo 1</span>
+            <span class="mode-name">Campaña</span>
+            <span class="mode-desc">Niveles ordenados según la materia, con jefes que ponen a prueba lo aprendido.</span>
+            <span class="bar" aria-hidden="true"><i id="mode-campaign-bar"></i></span>
+            <span class="mode-meta" id="mode-campaign-meta"></span>
+          </span>
+        </button>
+        <button id="mode-arcade" class="mode-card alt has-art" type="button">
+          <span class="mode-art scene" aria-hidden="true"><canvas id="mode-arcade-art" width="640" height="360"></canvas></span>
+          <span class="mode-body">
+            <span class="mode-tag">Modo 2</span>
+            <span class="mode-name">Arcade</span>
+            <span class="mode-desc">La taberna: un trader desesperado te pide ayuda con su programa en C++. Bonos, forwards y acciones.</span>
+            <span class="mode-meta" id="mode-arcade-meta"></span>
+          </span>
+        </button>
+      </div>
     </div>
 
     <!-- Paso 2: sección de la campaña -->
     <div id="view-campaign" class="mode-grid" hidden>
       <p class="view-title">Elige una sección</p>
-      <button id="sec-estructuras" class="mode-card" type="button">
-        <span class="mode-tag">Sección 1</span>
-        <span class="mode-name small">Estructuras y Funciones</span>
-        <span class="mode-desc">Estructura de un programa, tipos y operadores, control de flujo, funciones y arreglos.</span>
-        <span class="mode-meta" id="sec-estructuras-meta"></span>
-      </button>
-      <button id="sec-memoria" class="mode-card alt" type="button">
-        <span class="mode-tag">Sección 2</span>
-        <span class="mode-name small">Gestión de memoria</span>
-        <span class="mode-desc">Direcciones y punteros, aritmética, punteros especiales, new y delete, malloc y free, y el bono.</span>
-        <span class="mode-meta" id="sec-memoria-meta"></span>
-      </button>
+      <div class="mode-pair">
+        <button id="sec-estructuras" class="mode-card has-art" type="button">
+          <span class="mode-art map" id="sec-estructuras-art" aria-hidden="true"></span>
+          <span class="mode-body">
+            <span class="mode-tag">Sección 1</span>
+            <span class="mode-name small">Estructuras y Funciones</span>
+            <span class="mode-desc">Estructura de un programa, tipos y operadores, control de flujo, funciones y arreglos.</span>
+            <span class="bar" aria-hidden="true"><i id="sec-estructuras-bar"></i></span>
+            <span class="mode-meta" id="sec-estructuras-meta"></span>
+          </span>
+        </button>
+        <button id="sec-memoria" class="mode-card alt has-art" type="button">
+          <span class="mode-art map" id="sec-memoria-art" aria-hidden="true"></span>
+          <span class="mode-body">
+            <span class="mode-tag">Sección 2</span>
+            <span class="mode-name small">Gestión de memoria</span>
+            <span class="mode-desc">Direcciones y punteros, aritmética, punteros especiales, new y delete, malloc y free, y el bono.</span>
+            <span class="bar" aria-hidden="true"><i id="sec-memoria-bar"></i></span>
+            <span class="mode-meta" id="sec-memoria-meta"></span>
+          </span>
+        </button>
+      </div>
     </div>
 
     <!-- Paso 3: niveles -->
@@ -271,6 +293,7 @@
       </div>
     </div>
 
+    <p class="keys-help" id="keys-help"></p>
     <div class="touch-controls">
       <button class="btn pad" data-key="left" aria-label="Izquierda">◀</button>
       <button class="btn pad action" data-key="action" id="pad-action">Acción</button>
@@ -312,13 +335,20 @@
       <button id="arc-skip" class="btn ghost arc-skip" type="button" hidden>Saltar escena ⏭</button>
     </div>
     <div class="arc-frame" id="arc-frame">
-      <canvas id="arc-canvas" width="320" height="180" aria-label="La taberna"></canvas>
-      <div class="arc-flash" id="arc-flash"></div>
+      <canvas id="arc-canvas" width="640" height="360" aria-label="La taberna El Heap"></canvas>
+      <div class="arc-title" id="arc-title">
+        <p class="eyebrow">Modo Arcade</p>
+        <h2>La taberna El Heap</h2>
+        <p>Un trader cansado llega con un programa en C++ a medio escribir. Un caso por partida, al azar: comprar o vender un bono, construir un forward o valorar una acción. Si te equivocas más de la cuenta, lo despiden.</p>
+      </div>
     </div>
     <div class="arc-dialog" id="arc-dialog" hidden>
-      <p class="arc-who" id="arc-who"></p>
-      <p class="arc-line" id="arc-line"></p>
-      <div class="arc-choices" id="arc-choices"></div>
+      <canvas id="arc-portrait" class="arc-portrait" width="30" height="30" aria-hidden="true"></canvas>
+      <div class="arc-say">
+        <p class="arc-who" id="arc-who"></p>
+        <p class="arc-line" id="arc-line"></p>
+        <div class="arc-choices" id="arc-choices"></div>
+      </div>
       <span class="arc-next" id="arc-next" hidden>Seguir <kbd>Enter</kbd></span>
     </div>
 
@@ -354,18 +384,26 @@
         <span class="pc-stat" id="pc-clock" hidden></span>
         <span class="pc-stat" id="pc-strikes"></span>
       </div>
+      <div class="pc-timebar" id="pc-timebar" hidden><i id="pc-timefill"></i></div>
       <div class="pc-body">
-        <div class="pc-trader"><canvas id="pc-face" width="40" height="40" aria-hidden="true"></canvas><p class="pc-quip" id="pc-quip"></p></div>
-        <p class="pc-step" id="pc-step"></p>
-        <p class="pc-ask" id="pc-ask"></p>
-        <pre class="pc-code" id="pc-code"></pre>
-        <div class="pc-opts" id="pc-opts"></div>
-        <div class="pc-fb" id="pc-fb" hidden>
-          <p class="pc-fb-title" id="pc-fb-title"></p>
-          <p class="pc-fb-text" id="pc-fb-text"></p>
-          <button id="pc-next" class="btn primary" type="button">Siguiente paso <kbd>Enter</kbd></button>
+        <div class="pc-trader"><canvas id="pc-face" width="30" height="30" aria-hidden="true"></canvas><p class="pc-quip" id="pc-quip"></p></div>
+        <div class="pc-steps" id="pc-steps" aria-hidden="true"></div>
+        <div class="pc-main" id="pc-main">
+          <div class="pc-q">
+            <p class="pc-step" id="pc-step"></p>
+            <p class="pc-ask" id="pc-ask"></p>
+            <pre class="pc-code" id="pc-code"></pre>
+          </div>
+          <div class="pc-a">
+            <div class="pc-opts" id="pc-opts"></div>
+            <div class="pc-fb" id="pc-fb" hidden>
+              <p class="pc-fb-title" id="pc-fb-title"></p>
+              <p class="pc-fb-text" id="pc-fb-text"></p>
+              <button id="pc-next" class="btn primary" type="button">Siguiente paso <kbd>Enter</kbd></button>
+            </div>
+            <p class="pc-help">Responde con 1–4 o tocando la alternativa.</p>
+          </div>
         </div>
-        <p class="pc-help">Responde con 1–4 o tocando la alternativa.</p>
       </div>
     </div>
 
@@ -408,12 +446,13 @@
 <script src="js/engines.js?v=20261110a"></script>
 <script src="js/memory.js?v=20261111a"></script>
 <script src="js/arcade-cases.js?v=20261111a"></script>
-<script src="js/arcade.js?v=20261111a"></script>
-<script src="js/sound.js?v=20261110a"></script>
+<script src="js/arcade-scene.js?v=20261113a"></script>
+<script src="js/arcade.js?v=20261113a"></script>
+<script src="js/sound.js?v=20261113a"></script>
 <script src="js/firebase-config.js?v=20261110a"></script>
 <script src="js/cloud.js?v=20261110a"></script>
 <script src="js/bg.js?v=20261110a"></script>
-<script src="js/app.js?v=20261111c"></script>
+<script src="js/app.js?v=20261113a"></script>
 <script src="js/egg.js?v=20261110a"></script>
 <script src="js/audio-test.js?v=20261110a"></script>
 </body>
