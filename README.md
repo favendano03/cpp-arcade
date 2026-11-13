@@ -12,6 +12,8 @@
   <img src="docs/explain.png" width="31%" alt="Explicación después de acertar una pregunta">
 </p>
 
+![Modo Arcade: el trader en la taberna El Heap explica el caso antes de mostrar su computador](docs/arcade.png)
+
 C++ Arcade enseña **conceptos** de C++, no a escribir código: qué hace el preprocesador, el compilador y el enlazador, cuánto mide cada tipo, qué pasa al pasar por valor o por referencia, cuándo una recursión se queda sin caso base, por qué `arr[10]` se sale de un arreglo de 10. Cada pregunta se responde jugando, y cada respuesta viene con una explicación corta.
 
 Nació como herramienta de estudio para el curso *Programación en Finanzas* (C++), por eso varios ejemplos usan bonos y opciones.
@@ -84,7 +86,8 @@ css/style.css          estilos
 js/questions.js        contenido de los niveles y generadores de preguntas (sección 1)
 js/memory.js           niveles de la sección 2, Gestión de memoria
 js/arcade-cases.js     casos y preguntas del modo Arcade, por dificultad y tema
-js/arcade.js           modo Arcade: escena de la taberna, computador del trader y finales
+js/arcade-scene.js     escena pixel art de la taberna: personajes, luces, cámara y partículas
+js/arcade.js           modo Arcade: guion de la escena, computador del trader y finales
 js/engines.js          motores de juego (clasificador, disparos, carrera, jefes)
 js/app.js              navegación entre pantallas y controles
 js/storage.js          perfiles locales, exportar e importar

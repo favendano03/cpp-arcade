@@ -186,12 +186,25 @@
       tone(N.E6, 0.45, { vol: 0.12, type: "triangle", at: 0.55 });
     },
     lose() { [N.G4, N.E4, N.C4, 196].forEach((f, i) => tone(f, i === 3 ? 0.5 : 0.18, { type: "triangle", vol: 0.4, at: i * 0.2 })); },
+    // La taberna del modo Arcade.
+    door() { tone(190, 0.42, { type: "sawtooth", f2: 310, vol: 0.07 }); noise(0.4, { filter: "bandpass", freq: 500, freq2: 1300, vol: 0.12 }); },
+    bell() { [2093, 2637, 3136].forEach((f, i) => tone(f, 0.5 - i * 0.1, { type: "sine", vol: 0.1, at: 0.06 + i * 0.07 })); },
+    step() { noise(0.06, { freq: 340, vol: 0.3 }); tone(82, 0.06, { type: "triangle", vol: 0.16 }); },
+    thud(soft) { noise(0.14, { freq: 420, freq2: 90, vol: soft ? 0.25 : 0.5 }); tone(96, 0.16, { type: "triangle", f2: 48, vol: soft ? 0.2 : 0.4 }); },
+    pour() { noise(0.8, { filter: "bandpass", freq: 900, freq2: 2600, vol: 0.16 }); tone(420, 0.8, { type: "sine", f2: 980, vol: 0.05 }); },
+    slide() { noise(0.45, { filter: "bandpass", freq: 2400, freq2: 900, vol: 0.14 }); },
+    clink(soft) { tone(2350, 0.22, { type: "sine", vol: soft ? 0.08 : 0.2 }); tone(3520, 0.3, { type: "sine", vol: soft ? 0.05 : 0.12, at: 0.015 }); if (!soft) noise(0.03, { filter: "highpass", freq: 5000, vol: 0.2 }); },
+    gulp() { [0, 0.28].forEach(at => tone(210, 0.13, { type: "sine", f2: 120, vol: 0.3, at })); },
+    sigh() { noise(0.55, { filter: "bandpass", freq: 1100, freq2: 380, vol: 0.09 }); },
+    ring() { for (let i = 0; i < 6; i++) { tone(1480, 0.045, { type: "square", vol: 0.07, at: i * 0.075 }); tone(1865, 0.045, { type: "square", vol: 0.06, at: i * 0.075 + 0.037 }); } },
+    whoosh() { noise(1.1, { filter: "bandpass", freq: 260, freq2: 3200, vol: 0.2 }); tone(110, 1.1, { type: "sine", f2: 520, vol: 0.08 }); },
+    boot() { tone(N.C5, 0.09, { type: "sine", vol: 0.14 }); tone(N.G5, 0.16, { type: "sine", vol: 0.14, at: 0.08 }); },
     // Fondo del menú: mucho más suave.
     clash() { noise(0.07, { filter: "bandpass", freq: 1600 + Math.random() * 800, vol: 0.09 }); },
     ko() { tone(600, 0.35, { type: "triangle", f2: 150, vol: 0.08 }); }
   };
   // Mínimo de tiempo entre repeticiones del mismo sonido, para que no se amontonen.
-  const GAP = { key: 0.03, shoot: 0.07, move: 0.04, clash: 0.12, bossShot: 0.1, pop: 0.05 };
+  const GAP = { key: 0.03, shoot: 0.07, move: 0.04, clash: 0.12, bossShot: 0.1, pop: 0.05, step: 0.2 };
 
   function play(name, arg) {
     if (muted || !SOUNDS[name]) return;
