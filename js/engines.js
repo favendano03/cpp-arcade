@@ -5,6 +5,8 @@
 
   const W = 400, H = 460;
   const THINK = 5;   // segundos extra para pensar cada pregunta (pedido 2026-11-05)
+  // 4 segundos más cuando la pregunta trae 4 líneas de código o más (pedido 2026-11-13)
+  const codeBonus = code => (code && code.split("\n").length >= 4 ? 4 : 0);
   const C = {
     bg: "#0f0b13", grid: "rgba(99,212,230,0.06)", gridText: "rgba(99,212,230,0.16)",
     amber: "#ffb547", amberDeep: "#c97d14", cyan: "#63d4e6", fg: "#f3e9dc", muted: "#a99bb1",
@@ -287,7 +289,7 @@
       this.cur = { it, col: start, x: this.colX(start), y: -30, fast: false };
       const speedUp = this.answered / this.total;
       const fall = H - 96 + 30;
-      this.cur.speed = fall / (fall / lerp(34, 58, speedUp) + THINK);
+      this.cur.speed = fall / (fall / lerp(34, 58, speedUp) + THINK + codeBonus(it.code));
       // Monitos que corren dentro del bloque sin texto: cada uno con su lado, dirección y paso.
       if (it.anon) this.cur.runners = [0, 1, 2].map(k => ({ x: (k - 1) * 40 + (Math.random() - 0.5) * 16, dir: k % 2 ? 1 : -1, ph: Math.random() * 6, sp: 0.8 + Math.random() * 0.4 }));
       this.ui.prompt({ ask: it.ask, code: it.code, phase: this.phase.title || "" });
@@ -517,7 +519,7 @@
       // Más tiempo cuando hay código que leer o alternativas largas en el panel
       const lines = q.code ? q.code.split("\n").length : 0;
       const extra = Math.min(6, lines * 0.6) + (this.isBoss ? 1.5 : 0);
-      const dur = lerp(14, 9, this.qi / this.questions.length) + extra + THINK;
+      const dur = lerp(14, 9, this.qi / this.questions.length) + extra + THINK + codeBonus(q.code);
       this.orbs = q.options.map((o, i) => ({
         i, label: this.isBoss ? "ABCD"[i] : o,
         bx: (W / n) * (i + 0.5), x: (W / n) * (i + 0.5), y: top, phase: Math.random() * 6
@@ -831,7 +833,7 @@
       // tiempo de viaje de la compuerta: de ~10 s a ~6,5 s (medido hasta la posición de partida del jugador)
       const dur = lerp(10, 6.5, Math.max(0, this.qi) / this.questions.length);
       const base = (PY0 + 60) / dur, trip = PY0 + 200;   // una compuerta recorre ~PY0+200 px
-      return trip / (trip / base + THINK);
+      return trip / (trip / base + THINK + codeBonus(this.gate && this.gate.q.code));
     }
     nextGate(y) {
       this.qi++;
