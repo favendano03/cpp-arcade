@@ -725,6 +725,10 @@ summary::-webkit-details-marker { display: none; }
 .pc-code { margin: 0 0 12px; padding: 10px 12px; background: #060c0f; border: 1px solid #1d272e; border-radius: var(--radius-sm); font-family: var(--font-code); font-size: 0.85rem; line-height: 1.5; color: #d7f5df; overflow-x: auto; white-space: pre; counter-reset: ln; }
 .pc-code .ln { display: block; counter-increment: ln; }
 .pc-code .ln::before { content: counter(ln); display: inline-block; width: 1.6em; margin-right: 0.9em; text-align: right; color: #33464f; user-select: none; }
+@media (max-width: 640px) {  /* en celular las líneas largas bajan en vez de esconderse a la derecha */
+  .pc-code { white-space: pre-wrap; overflow-wrap: anywhere; overflow-x: hidden; }
+  .pc-code .ln { padding-left: 2.5em; text-indent: -2.5em; }
+}
 .pc-main.enter .pc-code .ln { animation: ln-in 0.22s ease-out both; animation-delay: calc(var(--i) * 45ms); }
 @keyframes ln-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
 .pc-code .kw { color: var(--amber); }

@@ -595,7 +595,7 @@
     if (S.banner) {
       const b = S.banner; b.t += dt;
       const sc = 3, w = textW(b.str, sc), x0 = Math.round((W - w) / 2), drop = Math.min(1, b.t / 0.45), y0 = Math.round(lerp(-24, 12, 1 - Math.pow(1 - drop, 3)));
-      R(x0 - 8, y0 - 6, w + 16, 27, "rgba(15,11,19,0.82)"); R(x0 - 8, y0 - 6, w + 16, 1, b.c); R(x0 - 8, y0 + 20, w + 16, 1, b.c);
+      R(0, y0 - 9, W, 33, "rgba(10,7,13,0.8)"); R(x0 - 8, y0 - 6, w + 16, 27, "#0f0b13"); R(x0 - 8, y0 - 6, w + 16, 1, b.c); R(x0 - 8, y0 + 20, w + 16, 1, b.c);
       [...b.str].forEach((ch, i) => { const wob = b.wave ? Math.round(Math.sin(clock * 6 - i * 0.7) * 1.5) : 0; text(ch, x0 + i * 4 * sc + 1, y0 + wob + 1, "rgba(0,0,0,0.7)", sc); text(ch, x0 + i * 4 * sc, y0 + wob, b.c, sc); });
     }
   }
