@@ -794,8 +794,8 @@
     },
     function () {
       const [ch] = letters(1), v = rnd(100, 2000);
-      return S("¿Qué imprime?", `void increase(void* data, bool is_char) {\n  if (is_char) ++(*static_cast<char*>(data));\n  else         ++(*static_cast<int*>(data));\n}\n\nchar a = '${ch}'; int b = ${v};\nincrease(&a, true);\nincrease(&b, false);\ncout << a << ", " << b;`,
-        `${nextChar(ch)}, ${v + 1}`, [`${ch}, ${v}`, `${ch}, ${v + 1}`, `${nextChar(ch)}, ${v}`], `Quien llama dice qué tipo hay; la función convierte e incrementa: '${ch}' → '${nextChar(ch)}' y ${v} → ${v + 1}.`);
+      return S("¿Qué imprime?", `void increase(void* data, bool is_char) {\n  if (is_char) ++(*static_cast<char*>(data));\n  else         ++(*static_cast<int*>(data));\n}\n\nchar a = '${ch}'; int b = ${v};\nincrease(&b, false);\ncout << a << ", " << b;`,
+        `${ch}, ${v + 1}`, [`${ch}, ${v}`, `${v + 1}, ${v + 1}`, "No compila"], `Quien llama dice qué tipo hay: con false la función trata el dato como int y lo incrementa (${v} → ${v + 1}). La variable a no se pasó a la función, así que sigue siendo '${ch}'.`);
     },
     function () {
       const v = rnd(100, 2000), k = rnd(2, 3);

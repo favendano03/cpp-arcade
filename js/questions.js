@@ -431,10 +431,10 @@
         `Al guardar un decimal en un \`int\` se trunca la parte decimal (no se redondea): queda ${n}.`, 3);
     },
     function () {
-      const k = rnd(1, 4), ch = String.fromCharCode(65 + k);
-      return mkQ("¿Qué imprime?", `char c = 'A' + ${k};\ncout << c;`,
-        ch, [`A${k}`, 65 + k],
-        `Un \`char\` es un número (código ASCII). 'A' = 65, más ${k} = ${65 + k}, que es '${ch}'. Como \`c\` es char, \`cout\` muestra la letra.`, 3);
+      const [a, b] = shuffle("kqwxyz".split("")).slice(0, 2);
+      return mkQ("¿Qué imprime?", `char c = '${a}';\nchar d = c;\nd = '${b}';\ncout << c;`,
+        a, [b, "No compila"],
+        `\`d = c\` copia el carácter. Cambiar d después no toca a c, que sigue siendo '${a}'.`, 3);
     },
     function () {
       return mkQ("¿Qué imprime?", "cout << (3 > 2) + (5 == 5);",
@@ -1222,16 +1222,16 @@
         "Los literales de cadena escritos uno al lado del otro se concatenan solos.", 3);
     },
     function () {
-      const c = pick([["\\x4A", "J", 74], ["\\x41", "A", 65], ["\\x61", "a", 97]]);
-      return mkQ("¿Qué imprime?", `char c = '${c[0]}';\ncout << c;`,
-        c[1], [c[0].slice(2), c[2]],
-        `\`\\x\` da el código en hexadecimal: ${c[0].slice(2)}₁₆ = ${c[2]}, que en ASCII es '${c[1]}'. Como es \`char\`, se imprime la letra.`, 3);
+      const e = pick([["\\x4A", "hexadecimal"], ["\\40", "octal"]]);
+      return mkQ("¿Qué guarda `c`?", `char c = '${e[0]}';`,
+        `Un carácter dado por su código en ${e[1]}`, ["Una cadena de varios caracteres", "No compila"],
+        "Es un escape numérico: `\\x` seguido de dígitos da el código en hexadecimal y `\\` seguido de dígitos, en octal. Igual es UN solo carácter, por eso cabe en un `char`.", 3);
     },
     function () {
-      const c = pick([["'0'", 48, [0, 1]], ["'a'", 97, [65, 1]], ["' '", 32, [0, 1]], ["'A'", 65, [97, 1]]]);
-      return mkQ("¿Qué imprime?", `cout << (int) ${c[0]};`,
-        c[1], c[2],
-        "Convertir un `char` a `int` muestra su código ASCII: 'A' = 65, 'a' = 97, '0' = 48, espacio = 32.", 3);
+      const L = pick("ABDKMRT".split("")), id = pick(["x", "y", "z"]);
+      return mkQ("¿Qué imprime?", `char ${id} = '${L}';\ncout << ${id} << ' ' << '${id}';`,
+        `${L} ${id}`, [`${id} ${id}`, `${L} ${L}`],
+        `Sin comillas, ${id} es la variable (vale '${L}'). Con comillas simples, '${id}' es el carácter ${id}.`, 3);
     },
     function () {
       return mkQ("¿Qué imprime?", "string m = \"Inicial\";\nm = \"Otro\";\ncout << m;",
@@ -1271,22 +1271,22 @@
         "`const` tiene tipo, respeta el ámbito y lo verifica el compilador. `#define` es solo reemplazo de texto.", 3);
     },
     function () {
-      const k = rnd(1, 6), ch = String.fromCharCode(65 + k);
-      return mkQ("¿Qué imprime?", `char c = 'A' + ${k};\ncout << c;`,
-        ch, [65 + k, `A${k}`],
-        `Un \`char\` guarda un código: 'A' es 65, más ${k} da ${65 + k}, que es '${ch}'. Como \`c\` es \`char\`, se imprime la letra.`, 3);
+      const w = pick(["empty", "msg", "texto"]);
+      return mkQ("¿Qué imprime?", `string ${w};\ncout << "[" << ${w} << "]";`,
+        "[]", ["[0]", "Un valor indeterminado"],
+        "Un `string` declarado sin valor queda vacío. Eso es distinto de un `int` local sin inicializar, que tiene un valor indeterminado.", 3);
     },
     function () {
-      const l = pick("bcdefghmrtz".split("")), U = l.toUpperCase();
-      return mkQ("¿Qué imprime?", `char c = '${l}';\nc = c - 32;\ncout << c;`,
-        U, [l.charCodeAt(0) - 32, l],
-        `En ASCII cada minúscula está 32 lugares después de su mayúscula: '${l}' − 32 = '${U}'.`, 3);
+      const [a, b] = pick([["bo", "no"], ["ta", "sa"], ["sw", "ap"], ["C", "++"]]);
+      return mkQ("¿Qué imprime?", `string a = "${a}";\nstring b = a;\nb += "${b}";\ncout << a;`,
+        a, [a + b, b],
+        `\`b = a\` copia el texto. Lo que se agrega a b no cambia a, que sigue siendo "${a}".`, 3);
     },
     function () {
-      const k = rnd(1, 3), l = String.fromCharCode(65 + k);
-      return mkQ("¿Qué imprime?", `cout << 'A' + ${k};`,
-        65 + k, [l, `A${k}`],
-        `Sumar un número a un \`char\` da un \`int\`: 65 + ${k} = ${65 + k}. Se imprime el número, no la letra (para eso hay que guardarlo en un \`char\`).`, 3);
+      const r = rnd(2, 9);
+      return mkQ("¿Qué imprime?", `#define PI 3\n#define NEWLINE '\\n'\ndouble radius = ${r};\ncout << 2 * PI * radius << NEWLINE;`,
+        6 * r, [`2 * PI * ${r}`, "No compila"],
+        `Antes de compilar, el preprocesador cambia PI por 3 y NEWLINE por '\\n': queda \`2 * 3 * ${r}\` = ${6 * r}, y luego un salto de línea.`, 3);
     },
     function () {
       const w = pick(["hola", "bono", "swap", "C++", "tasa", "Chile"]);
@@ -1319,10 +1319,10 @@
         "`+=` agrega al final del `string`, sin espacios.", 3);
     },
     function () {
-      const d = rnd(1, 9);
-      return mkQ("¿Qué imprime?", `char c = '${d}';\ncout << c - '0';`,
-        d, [48 + d, `${d}0`],
-        `'${d}' tiene código ${48 + d} y '0' tiene 48: la resta da ${d}. Es la forma típica de pasar un dígito a número.`, 3);
+      const c = pick(["Santiago", "Lima", "Bogota"]);
+      return mkQ("¿Qué imprime?", `string city = "${c}";\ncout << "city";`,
+        "city", [c, "No compila"],
+        `Entre comillas dobles, "city" es un texto literal: se imprime tal cual. Para mostrar ${c} hay que escribir el nombre de la variable sin comillas.`, 3);
     },
     function () {
       const a = rnd(1, 5), b = rnd(2, 6);
@@ -1345,7 +1345,7 @@
     function () {
       const l = pick(["A", "x", "7"]);
       return mkQ("¿Qué pasa?", `char c = "${l}";`,
-        "No compila", [l, l.charCodeAt(0)],
+        "No compila", [l, `"${l}"`],
         "Comillas dobles es una cadena (aunque tenga una letra), y no se puede guardar en un `char`. Lo correcto es `'" + l + "'`.", 3);
     }
   ];
@@ -2637,7 +2637,7 @@
     function () {
       return mkQ("¿Qué carácter marca el fin de una cadena C?", "",
         "'\\0'", ["'0'", "'\\n'"],
-        "El carácter nulo `'\\0'` (código 0), no el dígito '0' (código 48).", 3);
+        "El carácter nulo `'\\0'`, que se escribe con barra invertida. `'0'` es el dígito cero, un carácter común.", 3);
     },
     function () {
       const w = pick(["Hola", "Bono", "Chile", "Tasa"]);
@@ -2673,7 +2673,7 @@
       const w = pick(["A0B", "x0y", "10"]);
       return mkQ("¿Qué imprime?", `char s[] = "${w}";\ncout << sizeof(s);`,
         w.length + 1, [w.length, w.length + 2],
-        `El '0' de adentro es el dígito cero (código 48), no el carácter nulo '\\0'. El literal tiene ${w.length} caracteres + el '\\0' final = ${w.length + 1}.`, 3);
+        `El '0' de adentro es el dígito cero, un carácter común, no el carácter nulo '\\0'. El literal tiene ${w.length} caracteres + el '\\0' final = ${w.length + 1}.`, 3);
     },
     function () {
       return mkQ("Un literal como `\"Hello\"` es…", "",
@@ -2707,10 +2707,10 @@
         "Un arreglo nativo se inicializa al declararlo, pero después no se puede asignar completo. Sus elementos sí, uno por uno.", 3);
     },
     function () {
-      const w = pick(["hola", "bono", "tasa", "chile"]);
-      return mkQ("¿Qué imprime?", `char s[] = "${w}";\nfor (int i = 0; s[i] != '\\0'; i++)\n  s[i] = s[i] - 32;\ncout << s;`,
-        w.toUpperCase(), [w, w.toUpperCase()[0] + w.slice(1)],
-        "En ASCII cada minúscula está 32 lugares después de su mayúscula: el ciclo pasa toda la palabra a mayúsculas.", 3);
+      const w = pick(["tasa", "casa", "plata", "bala", "salsa"]), r = w.replace(/a/g, "*");
+      return mkQ("¿Qué imprime?", `char s[] = "${w}";\nfor (int i = 0; s[i] != '\\0'; i++)\n  if (s[i] == 'a') s[i] = '*';\ncout << s;`,
+        r, [w, w.replace("a", "*")],
+        `El ciclo recorre la cadena hasta el '\\0' y cambia cada 'a' por '*': queda "${r}".`, 3);
     }
   ];
 
@@ -2763,7 +2763,7 @@
       intro: "Dispara a la respuesta correcta antes de que llegue abajo. Esquiva los <code>0xDEAD</code>." },
       shooter(NUM_GENS)),
     Object.assign({ id: "c04-texto", world: 1, addr: "0x0130", title: "Texto y constantes", topic: "§4 Texto y constantes",
-      desc: "char vs string, secuencias de escape, ASCII, const y #define.",
+      desc: "char vs string, secuencias de escape, la clase string, const y #define.",
       intro: "Ponte en el carril con la salida correcta de cada fragmento de texto." },
       runner(TEXT_GENS)),
     { id: "jefe-b1", world: 1, addr: "0x7FFF", engine: "shooter", boss: true, controls: SHOOT,
