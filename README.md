@@ -21,7 +21,7 @@ Nació como herramienta de estudio para el curso *Programación en Finanzas* (C+
 ## Cómo se juega
 
 - **Campaña**: dos secciones, cada una con un jefe al final de cada bloque y un jefe final.
-  - **Estructuras y Funciones**: 16 niveles en 4 bloques.
+  - **Estructuras y Funciones**: un Nivel 0 guiado para quien nunca vio C++ (10 lecciones cortas, sin perder vidas) y 16 niveles en 4 bloques.
   - **Gestión de memoria**: 16 niveles en 5 bloques (punteros, arreglos y aritmética, punteros especiales, new/delete y malloc/free, y el bono).
 - **Arcade**: en la taberna El Heap, un trader cansado te pide ayuda con un caso (compra o venta de un bono, un forward o valorar la acción de una empresa ficticia). Resuelves en su computador preguntas de C++ aplicado: predecir la salida, completar la línea que falta o encontrar el bug. Tres dificultades (fácil, intermedio y leyenda, con reloj) y dos finales: lo ascienden o lo despiden.
 
