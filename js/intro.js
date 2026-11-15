@@ -19,15 +19,16 @@
   const reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
   const LINES = [
-    { id: "pago", text: "Cada vez que pagas con tarjeta, compras una acción o miras un gráfico de la bolsa, hay código trabajando a toda velocidad." },
-    { id: "cpp", text: "Gran parte de ese código está escrito en C++, un lenguaje creado en 1985 por Bjarne Stroustrup." },
-    { id: "mem", text: "Su gracia es que habla casi directo con la máquina: tú decides cómo se usa cada byte de memoria." },
-    { id: "rapido", text: "Por eso es tan rápido, y por eso mueve videojuegos, navegadores, sistemas operativos y hasta cohetes." },
-    { id: "fin", text: "En finanzas, la velocidad es dinero. Bancos y fondos lo usan para ejecutar órdenes en millonésimas de segundo, valorar bonos y opciones, y simular miles de escenarios de riesgo." },
-    { id: "datos", text: "Y en el análisis de datos, muchas librerías que usas desde Python corren por dentro en C y C++." },
+    { id: "pago", text: "Cada vez que pagas con tarjeta, compras una acción o miras la bolsa, hay código trabajando a toda velocidad." },
+    { id: "cpp", text: "Gran parte de ese código está en C++, un lenguaje creado en 1985 por Bjarne Stroustrup." },
+    { id: "mem", text: "Habla casi directo con la máquina: tú decides cómo se usa cada byte de memoria." },
+    { id: "rapido", text: "Por eso es tan rápido, y mueve videojuegos, navegadores, sistemas operativos y hasta cohetes." },
+    { id: "fin", text: "En finanzas, la velocidad es dinero: los bancos lo usan para ejecutar órdenes en millonésimas de segundo, valorar bonos y opciones, y simular miles de escenarios de riesgo." },
+    { id: "datos", text: "Python y R son ideales para explorar datos y probar ideas rápido." },
+    { id: "motor", text: "Pero cuando un modelo debe correr millones de veces, o en tiempo real, se lleva a C++. Y muchas de sus librerías ya son C y C++ por dentro." },
     { id: "ia", text: "Hoy, una inteligencia artificial escribe código en segundos." },
-    { id: "quien", text: "Pero alguien tiene que saber si ese código es correcto, si es eficiente y si va a fallar con la plata de un cliente." },
-    { id: "diseno", text: "Ese alguien entiende cómo funciona la máquina. Saber diseñar en C++ te da justamente eso." },
+    { id: "quien", text: "Pero alguien tiene que saber si ese código es correcto, eficiente, y si va a fallar con la plata de un cliente." },
+    { id: "diseno", text: "Ese alguien entiende la máquina. Saber diseñar en C++ te da justamente eso." },
     { id: "campana", text: "Esta campaña te lleva paso a paso: estructuras, funciones, arreglos y memoria. ¿Listo? Empecemos." }
   ];
   // Lo que se le manda a la voz: "C++" se lee "C más más".
@@ -304,7 +305,7 @@
   }
   function screenTint(t) {
     const id = currentId(t);
-    return id === "fin" ? "126,224,138" : id === "quien" ? "255,120,110" : id === "pago" ? "255,190,100" : "120,210,230";
+    return id === "fin" || id === "motor" ? "126,224,138" : id === "quien" ? "255,120,110" : id === "pago" ? "255,190,100" : "120,210,230";
   }
 
   /* =====================================================================
@@ -490,32 +491,64 @@
   function scrDatos(t) {
     const l = line("datos");
     termBg("ANALISIS DE DATOS", t);
-    const tp = wordT("datos", "python"), tc = wordT("datos", "dentro");
+    const tp = wordT("datos", "python"), tr = wordT("datos", "r"), te = wordT("datos", "explorar"), tb = wordT("datos", "probar");
     // tablero con barras y un KPI
     const k = since(t, l.start, 1.2);
-    const bars = [40, 62, 50, 78, 70, 92];
-    bars.forEach((h, i) => { const hh = Math.round(h * easeOut(k - i * 0.06)); R(20 + i * 18, 150 - hh, 12, hh, i === 5 ? P.amber : P.cyan); });
+    [40, 62, 50, 78, 70, 92].forEach((h, i) => { const hh = Math.round(h * easeOut(k - i * 0.06)); R(20 + i * 18, 150 - hh, 12, hh, i === 5 ? P.amber : P.cyan); });
     R(16, 150, 112, 1, P.muted);
     text("VENTAS", 20, 24, P.muted, 1); text("+18%", 20, 34, P.good, 3);
-    // la caja "Python" que se abre y muestra el motor en C/C++ adentro
-    const kp = easeOut(since(t, tp - 0.2, 0.4)), open = easeOut(since(t, tc - 0.1, 0.5));
-    if (kp > 0) {
-      const bx = 160, by = 70, bw = 140, bh = 86;
-      ctx.globalAlpha = kp;
-      if (open > 0) {   // el motor brilla adentro
+    // las insignias de Python y R
+    const kp = easeOut(since(t, tp - 0.15, 0.35)), kr = easeOut(since(t, tr - 0.15, 0.35));
+    if (kp > 0) { const y = lerp(-30, 26, kp); R(150, y, 76, 26, "#3a6ea5"); R(150, y + 24, 76, 2, "#e0b84a"); textC("PYTHON", 188, y + 7, "#ffe08a", 2); }
+    if (kr > 0) { const y = lerp(-30, 26, kr); R(236, y, 70, 26, "#2a4a7a"); R(236, y + 24, 70, 2, "#9fb8d8"); disc(271, y + 12, 9, "#9fb8d8"); text("R", 268, y + 8, "#2a4a7a", 2); }
+    // explorar: una nube de puntos con su recta, que se ajusta sola
+    if (t > te - 0.1) {
+      const kk = since(t, te - 0.1, 1.2), r = seeded(21), n = Math.floor(kk * 40);
+      R(150, 62, 156, 96, "#141a1f");
+      for (let i = 0; i < n; i++) { const x = r(), y = 0.25 + x * 0.5 + (r() - 0.5) * 0.3; R(156 + x * 144, 150 - y * 80, 3, 3, i % 3 ? P.cyan : P.amber); }
+      if (t > tb) { const kl = easeOut(since(t, tb, 0.6)); line2(156, 150 - 0.25 * 80, 156 + 144 * kl, 150 - (0.25 + 0.5 * kl) * 80, P.good, 2); textC("PROTOTIPO ✓", 228, 66, P.good, 1); }
+    }
+  }
+
+  function scrMotor(t) {
+    const l = line("motor");
+    termBg("PRODUCCION", t);
+    const tm = wordT("motor", "millones"), tt = wordT("motor", "tiempo"), tc = wordT("motor", "c++"), tl = wordT("motor", "librerias"), td = wordT("motor", "dentro");
+    if (t < tl - 0.2) {
+      // contador que se dispara y un reloj en vivo
+      const km = since(t, tm - 0.2, 1.2), n = Math.floor(Math.pow(km, 3) * 1000000);
+      textC("SIMULACIONES", 90, 30, P.muted, 1);
+      textC(n.toLocaleString("es-CL"), 90, 44, P.amber, 2);
+      if (t > tt - 0.15) {
+        const k = easeOut(since(t, tt - 0.15, 0.3));
+        ctx.globalAlpha = k; R(190, 24, 112, 34, "#1d2a20"); disc(206, 41, 8, "#e9e2d0");
+        const a = t * 6; line2(206, 41, 206 + Math.cos(a) * 6, 41 + Math.sin(a) * 6, "#c94a3a"); R(205, 40, 2, 2, P.ink);
+        text("TIEMPO", 222, 32, P.good, 2); text("REAL", 222, 46, P.good, 1); R(254, 46, 4, 4, Math.sin(t * 8) > 0 ? P.bad : "#5a1e22");
+        ctx.globalAlpha = 1;
+      }
+      // el prototipo pasa al motor en C++
+      if (t > tc - 0.4) {
+        const k = easeOut(since(t, tc - 0.4, 0.6));
+        R(28, 92, 92, 44, "#3a6ea5"); textC("PY / R", 74, 108, "#ffe08a", 2);
+        R(124, 112, 72 * k, 3, P.amber); if (k > 0.95) { R(194, 108, 3, 11, P.amber); R(197, 110, 2, 7, P.amber); }
+        if (k > 0.6) { const kk = easeOut((k - 0.6) / 0.4); R(206, 84, 92 * kk, 60, "#22324a"); if (kk > 0.9) { textC("C++", 252, 98, "#7fb2ff", 4); textC("HASTA X100 MAS RAPIDO", 252, 128, P.good, 1); } }
+      }
+    } else {
+      // la caja "Python" se abre y adentro hay un motor en C/C++
+      const bx = 90, by = 70, bw = 140, bh = 86, open = easeOut(since(t, td - 0.1, 0.5));
+      textC("LIBRERIAS DE DATOS", 160, 28, P.muted, 2);
+      if (open > 0) {
         R(bx + 6, by + 6, bw - 12, bh - 12, "#0e1a26");
         const rot = t * 3;
         for (let a = 0; a < 8; a++) { const ang = rot + a * Math.PI / 4; R(bx + bw / 2 + Math.cos(ang) * 22 - 4, by + bh / 2 + Math.sin(ang) * 22 - 4, 8, 8, "#4a7ac0"); }
         disc(bx + bw / 2, by + bh / 2, 20, "#4a7ac0"); disc(bx + bw / 2, by + bh / 2, 14, "#22324a");
         textC("C++", bx + bw / 2, by + bh / 2 - 4, "#7fb2ff", 2);
       }
-      // la tapa sube
-      const lid = Math.round(open * 54);
+      const lid = Math.round(open * 34);
       R(bx, by - lid, bw, 22, "#3a6ea5"); R(bx, by - lid, bw, 2, "#5f93cc"); R(bx, by + 20 - lid, bw, 2, "#e0b84a");
-      textC("PYTHON", bx + bw / 2, by + 6 - lid, "#ffe08a", 2);
+      textC("PYTHON · R", bx + bw / 2, by + 6 - lid, "#ffe08a", 2);
       R(bx, by + 22, 4, bh - 22, "#3a6ea5"); R(bx + bw - 4, by + 22, 4, bh - 22, "#3a6ea5"); R(bx, by + bh - 4, bw, 4, "#3a6ea5");
       if (open < 0.05) R(bx + 4, by + 22, bw - 8, bh - 26, "#2c5480");
-      ctx.globalAlpha = 1;
     }
   }
 
@@ -592,7 +625,7 @@
     for (const l of TL.lines) if (t >= l.start - 0.15) id = l.id;
     return id;
   }
-  const SCREENS = { pago: scrPago, cpp: scrCpp, mem: scrMem, rapido: scrRapido, fin: scrFin, datos: scrDatos, ia: scrIA, quien: scrQuien, diseno: scrDiseno, campana: scrDiseno };
+  const SCREENS = { pago: scrPago, cpp: scrCpp, mem: scrMem, rapido: scrRapido, fin: scrFin, datos: scrDatos, motor: scrMotor, ia: scrIA, quien: scrQuien, diseno: scrDiseno, campana: scrDiseno };
   function drawScreen(t) { ctx = sctx; ctx.save(); SCREENS[currentId(t)](t); ctx.restore(); }
 
   /* =====================================================================

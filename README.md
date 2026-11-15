@@ -35,7 +35,7 @@ Hay tres mecánicas:
 
 Los jefes mezclan preguntas de todo su bloque y atacan de formas distintas. Las preguntas de punteros y de control de flujo se generan al azar, así que cada partida es distinta. Después de cada respuesta el juego se pausa con una explicación hasta que aprietas **OK**, y los errores quedan guardados en **Repasar errores**.
 
-Cada vez que abres la campaña parte una intro animada de 77 segundos, con narración, que cuenta qué es C++ y para qué se usa, de las finanzas al análisis de datos. Se puede saltar con **Saltar video** o con Esc.
+Cada vez que abres la campaña parte una intro animada de 79 segundos, con narración, que cuenta qué es C++ y para qué se usa, de las finanzas al análisis de datos. Se puede saltar con **Saltar video** o con Esc.
 
 ## Niveles de la campaña
 
