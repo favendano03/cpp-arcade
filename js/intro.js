@@ -29,10 +29,10 @@
     { id: "ia", text: "Hoy, una inteligencia artificial escribe código en segundos." },
     { id: "quien", text: "Pero alguien tiene que saber si ese código es correcto, eficiente, y si va a fallar con la plata de un cliente." },
     { id: "diseno", text: "Ese alguien entiende la máquina. Saber diseñar en C++ te da justamente eso." },
-    { id: "campana", text: "Esta campaña te lleva paso a paso: estructuras, funciones, arreglos y memoria. ¿Listo? Empecemos." }
+    { id: "campana", text: "Esta campaña te lleva por estructuras, funciones, arreglos y memoria. Y si nunca has programado, parte por el Nivel 0: te guía en lo básico. ¿Listo? Empecemos." }
   ];
   // Lo que se le manda a la voz: "C++" se lee "C más más".
-  const spoken = s => s.replace(/C\+\+/g, "C más más");
+  const spoken = s => s.replace(/C\+\+/g, "C más más").replace(/Nivel 0/g, "Nivel cero");
   const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9+ñ]/g, "");
   const words = s => s.split(/\s+/).filter(Boolean);
 
@@ -631,7 +631,8 @@
   /* =====================================================================
      EL CAMINO DE LA CAMPAÑA (cierre)
      ===================================================================== */
-  const STOPS = [["estructuras", "ESTRUCTURAS", 54, 106, P.cyan], ["funciones", "FUNCIONES", 126, 70, P.good], ["arreglos", "ARREGLOS", 198, 106, P.amber], ["memoria", "MEMORIA", 268, 70, P.plum]];
+  const STOPS = [["estructuras", "ESTRUCTURAS", 100, 106, P.cyan], ["funciones", "FUNCIONES", 160, 70, P.good], ["arreglos", "ARREGLOS", 220, 106, P.amber], ["memoria", "MEMORIA", 280, 70, P.plum]];
+  const ZERO = { x: 38, y: 82 };     // el Nivel 0, para quien nunca ha programado: aparece al nombrarlo
   function drawMap(t) {
     ctx = mctx;
     R(0, 0, W, H, "#2a1b22");
@@ -654,18 +655,34 @@
       if (on) text(String(i + 1), x - 1, y - 2, "#2a1a14", 1);
       ctx.globalAlpha = 0.4 + 0.6 * pop; textC(lab, x, y + 13, on ? c : P.muted, 1); ctx.globalAlpha = 1;
     });
+    // el Nivel 0 aparece al principio del camino
+    const tz = wordT("campana", "nivel");
+    if (t > tz - 0.15) {
+      const k = easeOut(since(t, tz - 0.15, 0.35)), [, , x1, y1] = STOPS[0];
+      for (let s = 0; s <= 12; s++) { const kk = s / 12; if (kk > k) break; R(lerp(ZERO.x, x1, kk) - 1, lerp(ZERO.y, y1, kk) - Math.sin(kk * Math.PI) * 6 - 1, 3, 3, "#e8c48a"); }
+      const r = Math.round(9 * k);
+      disc(ZERO.x, ZERO.y, r + 1, "#1a1016"); disc(ZERO.x, ZERO.y, r, "#ffffff"); if (r > 5) disc(ZERO.x, ZERO.y, r - 3, "#fff4dc");
+      if (k > 0.9) {
+        text("0", ZERO.x - 1, ZERO.y - 2, "#2a1a14", 1);
+        textC("HOLA, C++", ZERO.x, ZERO.y + 13, P.fg, 1);
+        const on = Math.sin(t * 6) > -0.3;
+        R(ZERO.x - 26, ZERO.y - 42, 52, 11, on ? P.amber : "#c97d14"); textC("EMPIEZA AQUI", ZERO.x, ZERO.y - 39, P.ink, 1);
+      }
+    }
     // el búho salta de parada en parada
-    let ox = STOPS[0][2] - 34, oy = STOPS[0][3] + 4;
+    let ox = STOPS[0][2] - 30, oy = STOPS[0][3] + 4;
     for (let i = 0; i < STOPS.length; i++) {
       const k = since(t, lit[i] - 0.35, 0.35);
       if (k > 0) {
-        const px = i ? STOPS[i - 1][2] : STOPS[0][2] - 34, py = i ? STOPS[i - 1][3] - 8 : STOPS[0][3] + 4;
+        const px = i ? STOPS[i - 1][2] : STOPS[0][2] - 30, py = i ? STOPS[i - 1][3] - 8 : STOPS[0][3] + 4;
         ox = lerp(px, STOPS[i][2], ease(k)); oy = lerp(py, STOPS[i][3] - 8, ease(k)) - Math.sin(k * Math.PI) * 14;
       }
     }
+    const kz = since(t, tz - 0.4, 0.8);          // y vuelve volando al Nivel 0
+    if (kz > 0) { const [, , x4, y4] = STOPS[STOPS.length - 1]; ox = lerp(x4, ZERO.x, ease(kz)); oy = lerp(y4 - 8, ZERO.y - 8, ease(kz)) - Math.sin(kz * Math.PI) * 30; }
     const tl = wordT("campana", "listo"), te = wordT("campana", "empecemos");
     ctx.save(); const sc = 0.7; ctx.translate(ox, oy); ctx.scale(sc, sc); ctx.translate(-ox, -oy);
-    owl(ox, oy, { look: t > tl ? 0 : 1, up: 0, bob: 0, blink: (t % 3.1) < 0.12, wing: t > te - 0.2 ? 1 : 0, glasses: true });
+    owl(ox, oy, { look: t > tl ? 0 : kz > 0 && kz < 1 ? -1 : 1, up: 0, bob: 0, blink: (t % 3.1) < 0.12, wing: t > te - 0.2 ? 1 : 0, glasses: true });
     ctx.restore();
     // título final
     if (t > tl - 0.1) {
