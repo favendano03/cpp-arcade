@@ -441,6 +441,18 @@
   </section>
 
 </div>
+
+<!-- ============ INTRO DE LA CAMPAÑA (js/intro.js) ============ -->
+<div id="camp-intro" class="intro" role="dialog" aria-modal="true" aria-label="Introducción: qué es C++ y para qué sirve" hidden>
+  <div class="intro-stage">
+    <canvas id="camp-intro-canvas" width="320" height="180" aria-hidden="true"></canvas>
+    <div class="intro-bar" aria-hidden="true"><i id="camp-intro-prog"></i></div>
+    <button id="camp-intro-tap" class="intro-tap" type="button" hidden>▶ Ver con sonido</button>
+  </div>
+  <p id="camp-intro-sub" class="intro-sub" aria-live="polite"></p>
+  <button id="camp-intro-mute" class="intro-mute" type="button" hidden>🔊</button>
+  <button id="camp-intro-skip" class="intro-skip" type="button">Saltar video <span aria-hidden="true">▸▸</span></button>
+</div>
 <script src="js/storage.js?v=20261110a"></script>
 <script src="js/questions.js?v=20261113a"></script>
 <script src="js/engines.js?v=20261113a"></script>
@@ -452,7 +464,9 @@
 <script src="js/firebase-config.js?v=20261110a"></script>
 <script src="js/cloud.js?v=20261110a"></script>
 <script src="js/bg.js?v=20261110a"></script>
-<script src="js/app.js?v=20261113a"></script>
+<script src="js/intro-voice.js?v=20261115a"></script>
+<script src="js/intro.js?v=20261115a"></script>
+<script src="js/app.js?v=20261115a"></script>
 <script src="js/egg.js?v=20261110a"></script>
 <script src="js/audio-test.js?v=20261110a"></script>
 </body>

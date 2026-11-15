@@ -35,6 +35,8 @@ Hay tres mecánicas:
 
 Los jefes mezclan preguntas de todo su bloque y atacan de formas distintas. Las preguntas de punteros y de control de flujo se generan al azar, así que cada partida es distinta. Después de cada respuesta el juego se pausa con una explicación hasta que aprietas **OK**, y los errores quedan guardados en **Repasar errores**.
 
+Cada vez que abres la campaña parte una intro animada de 77 segundos, con narración, que cuenta qué es C++ y para qué se usa, de las finanzas al análisis de datos. Se puede saltar con **Saltar video** o con Esc.
+
 ## Niveles de la campaña
 
 | Bloque | Nivel | Mecánica |
@@ -88,6 +90,9 @@ js/memory.js           niveles de la sección 2, Gestión de memoria
 js/arcade-cases.js     casos y preguntas del modo Arcade, por dificultad y tema
 js/arcade-scene.js     escena pixel art de la taberna: personajes, luces, cámara y partículas
 js/arcade.js           modo Arcade: guion de la escena, computador del trader y finales
+js/intro.js            intro animada de la campaña (qué es C++ y para qué sirve), con subtítulos; se ve en cpparcade.cl/#intro
+js/intro-voice.js      tiempos de la narración (frase por frase y palabra por palabra)
+audio/intro-campana.mp3  narración de la intro (ElevenLabs)
 js/engines.js          motores de juego (clasificador, disparos, carrera, jefes)
 js/app.js              navegación entre pantallas y controles
 js/storage.js          perfiles locales, exportar e importar
