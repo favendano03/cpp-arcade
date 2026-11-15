@@ -2714,6 +2714,109 @@
     }
   ];
 
+
+  /* ---------- Nivel 0 · Primeros pasos (guiado, para quien nunca vio C++) ----------
+     Basado en "Fundamentos de C++" §1–§4 y §6–§7: qué es un programa, compilar, main, cout,
+     punto y coma, comentarios, variables, comillas, tipos básicos y cin. Cada paso = lección + 1 pregunta fácil. */
+  const TUTORIAL_STEPS = [
+    { title: "¿Qué es un programa?",
+      text: "Un programa es una lista de instrucciones que el computador ejecuta en orden. En C++ las escribes en un archivo de texto, por ejemplo `hola.cpp`. Ese texto no se puede ejecutar tal cual: primero el compilador (`g++`) lo traduce a un programa ejecutable y después lo ejecutas.",
+      code: "g++ hola.cpp -o hola   // 1. compilar\n./hola                 // 2. ejecutar",
+      tip: "Cómo se juega: cae una compuerta con 3 respuestas. Muévete con ◀ ▶ al carril correcto antes de que llegue. Si ya sabes, avanza con ▲. Aquí no pierdes vidas.",
+      q: () => pick([
+        () => mkQ("Escribiste `hola.cpp`. ¿Qué tienes que hacer antes de ejecutarlo?", "", "Compilarlo", ["Nada más", "Imprimirlo"],
+          "El código fuente es texto. El compilador lo traduce a un ejecutable, y ese ejecutable es el que corre.", 3),
+        () => mkQ("¿Qué hace `g++` con tu archivo `.cpp`?", "g++ hola.cpp -o hola", "Lo compila", ["Lo ejecuta", "Lo borra"],
+          "`g++` es el compilador: traduce `hola.cpp` a un ejecutable llamado `hola`. Para ejecutarlo se escribe `./hola`.", 3)
+      ])() },
+    { title: "main: donde empieza todo",
+      text: "Todo programa C++ de consola empieza a ejecutarse en la función `main`, esté donde esté en el archivo. Las llaves `{ }` encierran sus instrucciones y `return 0;` la termina e informa que todo salió bien.",
+      code: "int main() {\n  // aquí van las instrucciones\n  return 0;  // terminó bien\n}",
+      q: () => pick([
+        () => mkQ("¿En qué función empieza a ejecutarse un programa C++?", "", "main", ["cout", "return"],
+          "La ejecución siempre comienza en `main`, aunque haya otras funciones escritas antes.", 3),
+        () => mkQ("¿Qué significa `return 0;` al final de `main`?", "int main() {\n  return 0;\n}", "Terminó bien", ["Imprime 0", "Repite main"],
+          "`return` termina la función. El 0 que devuelve `main` informa que el programa terminó correctamente; no imprime nada.", 3),
+        () => mkQ("¿Qué encierran las llaves `{ }` de `main`?", "int main() {\n  ...\n}", "Sus instrucciones", ["Un comentario", "El nombre"],
+          "Las llaves delimitan el cuerpo de la función: ahí van las instrucciones que se ejecutan.", 3)
+      ])() },
+    { title: "cout: mostrar en pantalla",
+      text: "`cout << \"texto\";` envía un texto a la pantalla. Lo que va entre comillas dobles se imprime tal cual, pero sin las comillas. Para usar `cout` el programa incluye `#include <iostream>` y escribe `using namespace std;` (o `std::cout`).",
+      code: "#include <iostream>\nusing namespace std;\n\nint main() {\n  cout << \"¡Hola mundo!\";\n  return 0;\n}",
+      q: () => { const w = pick(["Hola", "Chile", "Bono", "Tasa", "Dólar"]);
+        return mkQ("¿Qué aparece en pantalla?", `cout << "${w}";`, w, [`"${w}"`, "cout"],
+          `Se imprime el texto que está entre comillas, sin las comillas: ${w}.`, 3); } },
+    { title: "Instrucciones y punto y coma",
+      text: "Cada instrucción termina en punto y coma `;`. Si falta, el programa no compila. Las instrucciones se ejecutan en orden, de arriba hacia abajo, y los saltos de línea del código NO aparecen en la salida: dos `cout` seguidos quedan pegados.",
+      code: "cout << \"Hola \";\ncout << \"mundo\";   // Hola mundo",
+      q: () => pick([
+        () => { const [a, b] = shuffle(["Bono", "Tasa", "Plazo", "Cupón"]);
+          return mkQ("¿Qué aparece en pantalla?", `cout << "${a}";\ncout << "${b}";`, a + b, [`${a} ${b}`, b + a],
+            `Se ejecutan en orden y el salto de línea del código no se imprime: queda ${a}${b}, pegado.`, 3); },
+        () => mkQ("Este código no compila. ¿Qué le falta?", "int main() {\n  cout << \"Hola\"\n  return 0;\n}", "Un ; tras \"Hola\"", ["Otra llave }", "Nada"],
+          "La instrucción `cout << \"Hola\"` termina sin punto y coma. Cada instrucción debe cerrar con `;`.", 3)
+      ])() },
+    { title: "Comentarios",
+      text: "Un comentario es texto para las personas: el programa lo ignora. `//` comenta hasta el final de la línea y `/* ... */` puede abarcar varias líneas. Sirven para explicar qué hace el código.",
+      code: "// esto no se ejecuta\ncout << \"Sí se ejecuta\";  // nota al lado",
+      q: () => { const [a, b] = shuffle(["Bono", "Tasa", "Plazo", "Cupón"]);
+        return mkQ("¿Qué aparece en pantalla?", `// cout << "${a}";\ncout << "${b}";`, b, [a + b, a],
+          `La primera línea es un comentario (empieza con //), así que no se ejecuta. Solo se imprime ${b}.`, 3); } },
+    { title: "Variables",
+      text: "Una variable es un nombre que guarda un valor que puede cambiar. Se declara con su tipo: `int acciones = 10;` crea un entero llamado `acciones` que vale 10. Con `=` le asignas un valor nuevo y el anterior se reemplaza. `cout << acciones;` imprime su valor.",
+      code: "int a = 5;\na = a + 1;     // ahora a vale 6\ncout << a;     // 6",
+      q: () => pick([
+        () => { const a = rnd(2, 9), b = rnd(2, 9);
+          return mkQ("¿Qué aparece en pantalla?", `int x = ${a};\nx = x + ${b};\ncout << x;`, a + b, [a, b],
+            `x parte en ${a}; luego x = ${a} + ${b} guarda ${a + b} y reemplaza el valor anterior.`, 3); },
+        () => { const a = rnd(2, 9), b = rnd(10, 30);
+          return mkQ("¿Qué aparece en pantalla?", `int precio = ${a};\nprecio = ${b};\ncout << precio;`, b, [a, a + b],
+            `La asignación reemplaza el valor: precio pasa de ${a} a ${b}. No se suman.`, 3); }
+      ])() },
+    { title: "¿Con o sin comillas?",
+      text: "Sin comillas, `precio` es el nombre de una variable y `cout` imprime su valor. Con comillas dobles, `\"precio\"` es un texto y se imprime tal cual. Con comillas simples, `'x'` es un solo carácter.",
+      code: "int precio = 50;\ncout << precio;     // 50\ncout << \"precio\";   // precio",
+      q: () => { const n = rnd(20, 99), name = pick(["precio", "tasa", "plazo", "saldo"]);
+        return pick([
+          () => mkQ("¿Qué aparece en pantalla?", `int ${name} = ${n};\ncout << "${name}";`, name, [n, "Error"],
+            `Va entre comillas, así que es un texto: se imprime la palabra ${name}, no el valor de la variable.`, 3),
+          () => mkQ("¿Qué aparece en pantalla?", `int ${name} = ${n};\ncout << ${name};`, n, [name, `"${name}"`],
+            `Sin comillas, ${name} es la variable: se imprime su valor, ${n}.`, 3)
+        ])(); } },
+    { title: "Tipos básicos",
+      text: "El tipo dice qué guarda la variable: `int` números enteros (120, -3), `double` números con decimales (99.5), `char` un carácter ('A'), `bool` verdadero o falso (`true`/`false`) y `string` un texto (\"Santiago\", necesita `#include <string>`).",
+      code: "int acciones = 120;\ndouble precio = 99.5;\nchar nota = 'A';\nbool abierto = true;\nstring ciudad = \"Santiago\";",
+      q: () => { const c = pick([
+          ["el precio de una acción: 99.5", "double", "Lleva decimales, así que va en un double."],
+          ["la cantidad de acciones: 120", "int", "Es un número entero, así que va en un int."],
+          ["si el mercado está abierto", "bool", "Solo puede ser verdadero o falso: un bool (true/false)."],
+          ["la letra de una nota: 'A'", "char", "Es un solo carácter entre comillas simples: un char."],
+          ["el nombre de una ciudad: \"Santiago\"", "string", "Es un texto de varias letras: un string."],
+          ["una tasa de interés: 0.05", "double", "Tiene decimales, así que va en un double."],
+          ["los días de un plazo: 30", "int", "Es un número entero de días: un int."]
+        ]);
+        const others = shuffle(["int", "double", "char", "bool", "string"].filter(t => t !== c[1]));
+        return mkQ(`¿Qué tipo usarías para guardar ${c[0]}?`, "", c[1], others, c[2], 3); } },
+    { title: "cin: leer del teclado",
+      text: "`cout <<` lleva datos a la pantalla y `cin >>` trae datos del teclado: `cin >> n;` espera que el usuario escriba un valor y lo guarda en la variable `n`. Fíjate en la dirección de las flechas.",
+      code: "int n;\ncout << \"Ingrese un valor: \";\ncin >> n;      // si escribe 4, n vale 4",
+      q: () => pick([
+        () => { const v = rnd(2, 9), k = rnd(2, 5);
+          return mkQ(`El usuario escribe ${v}. ¿Qué aparece en pantalla?`, `int n;\ncin >> n;\ncout << n * ${k};`, v * k, [v, k],
+            `cin guarda ${v} en n, y luego se imprime n * ${k} = ${v * k}.`, 3); },
+        () => mkQ("¿Qué instrucción lee un número del teclado y lo guarda en n?", "", "cin >> n;", ["cout << n;", "cin << n;"],
+          "`cin >>` extrae datos del teclado hacia la variable. `cout <<` es para mostrar, y `cin <<` no compila.", 3)
+      ])() },
+    { title: "Tu primer programa completo",
+      text: "Ya conoces todas las piezas: el `#include`, `main`, las variables y `cout`. Con varios `<<` seguidos puedes imprimir texto y valores en una misma instrucción.",
+      code: "#include <iostream>\nusing namespace std;\n\nint main() {\n  int acciones = 10;\n  cout << \"Tengo \" << acciones;   // Tengo 10\n  return 0;\n}",
+      tip: "Después de este nivel sigue con el nivel 01, que profundiza en la estructura de un programa.",
+      q: () => { const n = rnd(11, 60), name = pick(["acciones", "bonos", "clientes"]);
+        return mkQ("¿Qué aparece en pantalla?", `#include <iostream>\nusing namespace std;\n\nint main() {\n  int ${name} = ${n};\n  cout << "Tengo " << ${name};\n  return 0;\n}`,
+          `Tengo ${n}`, [`Tengo ${name}`, `"Tengo " ${n}`],
+          `Se imprime el texto "Tengo " (sin comillas) y luego el valor de ${name}, que es ${n}.`, 3); } }
+  ];
+
   /* ---------- Conversión de clasificadores a alternativas (para jefes) ---------- */
   const NAMES = {
     pre: "Preprocesador", comp: "Compilador", link: "Enlazador",
@@ -2749,6 +2852,12 @@
     LOOP_GENS, JUMP_GENS, ARRAY_GENS, CSTR_GENS, STRUCT_ITEMS, FILE_ITEMS, IFACE_ITEMS }).forEach(([k, arr]) => { arr.key = k; });
 
   const CAMPAIGN = [
+    // Nivel 0: tutorial muy guiado para quien nunca vio C++. No cuenta para los jefes.
+    { id: "c00-intro", world: 0, tutorial: true, addr: "0x0000", engine: "guided", controls: RUN,
+      title: "Hola, C++", topic: "Nivel 0 · Primeros pasos",
+      desc: "Para empezar desde cero: qué es un programa, compilar, main, cout, variables, tipos y cin.",
+      intro: "¿Nunca has visto C++? Parte aquí. Antes de cada compuerta te explico una idea con un ejemplo, y luego respondes una pregunta fácil sobre ella. Aquí no pierdes vidas: si te equivocas, te explico y vuelves a intentarlo.",
+      build() { return { steps: TUTORIAL_STEPS }; } },
     // Bloque 1
     Object.assign({ id: "c01-estructura", world: 1, addr: "0x0100", title: "Estructura de un programa", topic: "§1 Estructura de un programa",
       desc: "Preprocesador, compilador y enlazador: quién hace qué y quién reclama.",
@@ -2837,7 +2946,7 @@
   ];
 
   function buildBoss(lv) {
-    const src = lv.bossOf === "all" ? CAMPAIGN.filter(l => !l.boss) : CAMPAIGN.filter(l => (lv.bossOf || []).includes(l.id));
+    const src = lv.bossOf === "all" ? CAMPAIGN.filter(l => !l.boss && !l.tutorial) : CAMPAIGN.filter(l => (lv.bossOf || []).includes(l.id));
     let qs;
     if (lv.bossOf === "all") qs = shuffle(src).slice(0, 10).map(l => l.quiz(1)[0]).concat(bossQuestions(lv.bank, 2));
     else qs = src.flatMap(l => l.quiz(2)).concat(bossQuestions(lv.bank, 2));
@@ -2871,6 +2980,7 @@
     // Herramientas para las otras secciones de la campaña (memory.js).
     kit: { rnd, pick, shuffle, hex, cout6, vars, mkQ, freshIdx, fromGens, cases, SORT, SHOOT, RUN },
     worlds: [
+      { n: 0, name: "Nivel 0 · Primeros pasos", desc: "Si nunca has visto C++, empieza aquí: un recorrido guiado por lo más básico." },
       { n: 1, name: "Bloque 1 · Bases", desc: "Secciones 1 a 4 del resumen: estructura, variables, tipos y texto." },
       { n: 2, name: "Bloque 2 · Operadores y archivos", desc: "Secciones 5 a 7: operadores, entrada/salida y headers." },
       { n: 3, name: "Bloque 3 · Funciones", desc: "Secciones 8 a 11: funciones, argumentos, interfaces y recursión." },

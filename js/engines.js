@@ -959,5 +959,90 @@
     }
   }
 
-  window.Engines = { W, H, Input, KEYMAP, Sorter, Shooter, Runner };
+  /* =====================================================================
+     MOTOR 4 · NIVEL GUIADO (Nivel 0): la carrera, pero con una lección antes de cada compuerta,
+     sin bugs, más lenta y sin perder vidas. Si se equivoca, explica y repite la idea una vez.
+     ===================================================================== */
+  class Guided extends Runner {
+    constructor(level, data, ui) {
+      super(level, data, ui);
+      this.bugs = [];
+    }
+    progress() { return Math.min(1, this.stepsDone / this.steps.length); }
+    get speed() {
+      // ~17 s por compuerta (21 s si el código es largo); con ▲ se llega antes.
+      return (PY0 + 200) / (12 + THINK + codeBonus(this.gate && this.gate.q.code));
+    }
+    nextGate(y) {
+      if (!this.steps) { this.steps = this.data.steps; this.si = -1; this.stepsDone = 0; this.retry = false; }
+      this.gate = null;
+      if (this.retry) {
+        // Segunda oportunidad: la misma idea con otros valores, sin repetir la lección.
+        this.retry = false;
+        this.retried = true;
+        return this.showGate(this.steps[this.si].q(), y, "otra vez");
+      }
+      this.si++;
+      this.retried = false;
+      if (this.si >= this.steps.length) { this.endT = 0.8; return; }
+      // La lección se abre en el siguiente cuadro de juego (no encima de la pantalla de inicio).
+      this.lessonAt = y;
+      this.ui.prompt({ ask: "Lee la lección…", code: "" });
+    }
+    update(dt) {
+      if (this.lessonAt !== undefined) {
+        const y = this.lessonAt, st = this.steps[this.si];
+        this.lessonAt = undefined;
+        this.blocking = true;
+        Input.clear();
+        this.ui.lesson(this.si + 1, this.steps.length, st, () => {
+          this.blocking = false;
+          this.showGate(st.q(), y);
+        });
+        return;
+      }
+      super.update(dt);
+    }
+    showGate(q, y, note) {
+      this.gate = { q, y };
+      const st = this.steps[this.si];
+      this.ui.prompt({ ask: q.ask, code: q.code, phase: `Lección ${this.si + 1}/${this.steps.length} · ${st.title}${note ? " · " + note : ""}` });
+    }
+    right(x, y, item, bonus, then) {
+      this.stepsDone++;
+      super.right(x, y, item, bonus, then);
+    }
+    // En el nivel guiado equivocarse no quita vidas: se explica y se da otra oportunidad.
+    wrong(x, y, item, title, then) {
+      this.answered++;
+      this.streak = 0;
+      sfx("wrong");
+      this.fx.burst(x, y, C.amber, 16);
+      this.missed.push({ ask: item.ask, code: item.code || "", answer: item.correctText, explain: item.explain });
+      const again = !this.retried;
+      if (again) this.retry = true; else this.stepsDone++;
+      this.blocking = true;
+      Input.clear();
+      this.ui.explain("Casi", `La respuesta era \`${item.correctText}\`. ${item.explain}${again ? " Viene otra pregunta parecida para practicarlo." : ""}`, () => {
+        this.blocking = false;
+        if (then) then();
+      });
+      this.pushHud();
+    }
+    draw(ctx) {
+      super.draw(ctx);
+      // Ayuda de controles mientras no responda la primera compuerta.
+      if (this.gate && this.answered === 0) {
+        ctx.font = `700 12px ${MONO}`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillStyle = C.amber;
+        const a = 0.55 + 0.45 * Math.sin(this.time * 4);
+        ctx.globalAlpha = a;
+        ctx.fillText("◀ ▶ elige carril · ▲ avanza", W / 2, this.py + 30);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  window.Engines = { W, H, Input, KEYMAP, Sorter, Shooter, Runner, Guided };
 })();

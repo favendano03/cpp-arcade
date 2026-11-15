@@ -255,7 +255,7 @@
       return `<i class="dot${l.boss ? " boss" : ""}${st.done ? " done s" + (st.stars || 1) : ""}"></i>`;
     }).join("")}</span>`).join("");
   }
-  const MECH = { sorter: "Clasificador", shooter: "Disparos", runner: "Carrera" };
+  const MECH = { sorter: "Clasificador", shooter: "Disparos", runner: "Carrera", guided: "Tutorial" };
   const WORLDS = window.Content.worlds;
   function isDone(id) { const st = profile.levels[id]; return !!(st && st.done); }
   // Los niveles normales siempre están abiertos (para estudiar el tema que quieras).
@@ -310,7 +310,7 @@
     $("mode-campaign-art").innerHTML = dotsHTML(camp);
     ["estructuras", "memoria"].forEach(sec => {
       const lv = camp.filter(l => secOf(l) === sec), done = lv.filter(l => isDone(l.id)).length;
-      const blocks = new Set(lv.map(l => l.world)).size;
+      const blocks = new Set(lv.filter(l => !l.tutorial).map(l => l.world)).size;
       $(`sec-${sec}-meta`).textContent = `${done}/${lv.length} completados · ${blocks} bloques y jefe final`;
       $(`sec-${sec}-bar`).style.width = (lv.length ? done / lv.length * 100 : 0) + "%";
       $(`sec-${sec}-art`).innerHTML = dotsHTML(lv);
@@ -347,11 +347,12 @@
       const locked = !isUnlocked(l);
       const li = document.createElement("li");
       if (l.boss) li.className = "is-boss";
-      if (!l.boss) num++;
+      if (l.tutorial) li.className = "is-tutorial";
+      if (!l.boss && !l.tutorial) num++;
       li.innerHTML = `<button class="level-card${l.boss ? " boss" : ""}${st.done ? " done" : ""}" type="button" ${locked ? "disabled" : ""}>
-          <span class="level-num" aria-hidden="true">${l.boss ? (locked ? "🔒" : "☠") : String(num).padStart(2, "0")}</span>
+          <span class="level-num" aria-hidden="true">${l.boss ? (locked ? "🔒" : "☠") : l.tutorial ? "00" : String(num).padStart(2, "0")}</span>
           <span class="level-main">
-            <span class="level-title">${esc(l.title)}</span>
+            <span class="level-title">${esc(l.title)}${l.tutorial && !st.done ? ' <span class="start-here">Empieza aquí</span>' : ""}</span>
             <span class="level-desc">${locked ? esc(lockText(l)) + "." : esc(l.topic) + " · " + esc(l.desc)}</span>
             <span class="level-tags"><span class="chip ${l.boss ? "boss" : l.engine}">${l.boss ? (l.final ? "Jefe final" : "Jefe") : MECH[l.engine] || ""}</span><span class="level-addr">${l.addr}</span></span>
           </span>
@@ -527,6 +528,27 @@
         btn.focus({ preventScroll: true });
       }, lock);
     },
+    // Nivel guiado: tarjeta de lección antes de cada compuerta. Se cierra con su botón o Enter.
+    lesson(k, total, st, cb) {
+      clearTimeout(toastTimer);
+      const fb = $("feedback");
+      fb.className = "feedback lesson";
+      $("fb-title").innerHTML = `<span class="lesson-step">Lección ${k} de ${total}</span>${esc(st.title)}`;
+      $("fb-text").innerHTML = fmt(st.text) +
+        (st.code ? `<span class="lesson-code">${highlight(st.code)}</span>` : "") +
+        (st.tip ? `<span class="lesson-tip">${fmt(st.tip)}</span>` : "");
+      fb.hidden = false;
+      fb.scrollTop = 0;
+      fb.style.pointerEvents = "auto";
+      explainCb = cb;
+      const btn = $("fb-continue"), lock = 900;
+      btn.innerHTML = (k === 1 ? "¡Vamos!" : "¡A practicar!") + " <kbd>Enter</kbd>";
+      btn.style.setProperty("--wait", lock + "ms");
+      btn.disabled = true;
+      btn.classList.add("wait");
+      explainReadyAt = performance.now() + lock;
+      setTimeout(() => { btn.disabled = false; btn.classList.remove("wait"); btn.focus({ preventScroll: true }); }, lock);
+    },
     finish(res) { setTimeout(() => endLevel(res), 500); }
   };
   function continueExplain() {
@@ -544,7 +566,8 @@
     levelIdx = idx;
     const lv = LEVELS[idx];
     const data = lv.build();
-    const Engine = { sorter: Engines.Sorter, shooter: Engines.Shooter, runner: Engines.Runner }[lv.engine];
+    const Engine = { sorter: Engines.Sorter, shooter: Engines.Shooter, runner: Engines.Runner, guided: Engines.Guided }[lv.engine];
+    const lanes = lv.engine === "runner" || lv.engine === "guided";
     explainCb = null;
     $("feedback").hidden = true;
     $("pause-menu").hidden = true;
@@ -552,10 +575,10 @@
     Input.clear();
     $("hud-level").textContent = lv.title;
     $("pad-action").textContent = lv.engine === "shooter" ? "Disparar" : lv.engine === "sorter" ? "Soltar" : "·";
-    $("pad-action").disabled = lv.engine === "runner";
+    $("pad-action").disabled = lanes;
     // En la carrera el botón del medio se cambia por ▲ ▼ para avanzar y retroceder.
-    $("pad-action").hidden = lv.engine === "runner";
-    $("pad-vert").hidden = lv.engine !== "runner";
+    $("pad-action").hidden = lanes;
+    $("pad-vert").hidden = !lanes;
     ui.prompt({ ask: "Prepárate…", code: "" });
     game = new Engine(lv, data, ui);
     game.pushHud();
@@ -609,7 +632,8 @@
     const rec = Store.recordLevel(profile, lv.id, res);
     stopGame();
     $("res-eyebrow").textContent = lv.topic;
-    $("res-title").textContent = res.completed ? (lv.boss ? "¡Segfault derrotado!" : "Nivel completado") : "Sin vidas";
+    $("res-title").textContent = res.completed ? (lv.boss ? "¡Segfault derrotado!" : lv.tutorial ? "¡Primeros pasos listos!" : "Nivel completado") : "Sin vidas";
+    if (lv.tutorial && res.completed) $("res-eyebrow").textContent = "Ya puedes seguir con el nivel 01: Estructura de un programa";
     $("res-stars").innerHTML = starsHTML(res.stars, true);
     document.querySelector("#screen-result .result").classList.toggle("lose", !res.completed);
     $("res-score").textContent = res.score;
