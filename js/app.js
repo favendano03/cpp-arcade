@@ -291,7 +291,8 @@
   $("soon-close").addEventListener("click", closeSoon);
   $("soon-modal").addEventListener("click", e => { if (e.target === $("soon-modal")) closeSoon(); });
   $("hub-back").addEventListener("click", () => setHubView(VIEW_PARENT[hubView] || "modes"));
-  $("mode-campaign").addEventListener("click", () => setHubView("campaign"));
+  // La campaña siempre abre con la intro (qué es C++ y para qué sirve); se puede saltar.
+  $("mode-campaign").addEventListener("click", () => { setHubView("campaign"); if (window.Intro) Intro.play(); });
   $("sec-estructuras").addEventListener("click", () => { hubSection = "estructuras"; setHubView("levels"); });
   $("sec-memoria").addEventListener("click", () => { hubSection = "memoria"; setHubView("levels"); });
   $("mode-arcade").addEventListener("click", () => { show("arcade"); window.Arcade.open(profile, renderHub); });

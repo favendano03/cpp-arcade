@@ -774,3 +774,46 @@ summary::-webkit-details-marker { display: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation-duration: 0.01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
 }
+
+/* ---------- Intro de la campaña (js/intro.js) ---------- */
+.intro {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  padding: 16px 16px 76px;
+  background: radial-gradient(ellipse 80% 60% at 50% 40%, #2a1b22, #0b080d 75%);
+}
+body.intro-on { overflow: hidden; }
+.intro-stage {
+  position: relative;
+  width: min(100%, calc((100vh - 190px) * 1.7778), 1280px);
+  min-width: min(100%, 300px);
+  border-radius: 10px; overflow: hidden;
+  box-shadow: 0 0 0 2px #3d2820, 0 0 0 6px #1a100c, 0 24px 60px -20px rgba(0, 0, 0, 0.9), 0 0 80px -30px rgba(255, 181, 71, 0.35);
+}
+.intro-stage canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; image-rendering: auto; }
+.intro-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, 0.08); }
+.intro-bar i { display: block; height: 100%; width: 0; background: var(--amber); }
+.intro-sub {
+  margin: 0; max-width: min(100%, 860px); min-height: 3em;
+  text-align: center; font-size: clamp(0.98rem, 2.3vw, 1.25rem); line-height: 1.45; font-weight: 600;
+  color: var(--fg); text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+}
+.intro-skip, .intro-mute {
+  position: fixed; bottom: 18px; z-index: 201;
+  font: 700 0.95rem var(--font-body); color: var(--fg); cursor: pointer;
+  background: rgba(34, 26, 41, 0.92); border: 1px solid var(--line-2); border-radius: 999px;
+  padding: 10px 18px; min-height: 44px;
+}
+.intro-skip { right: 18px; }
+.intro-skip:hover, .intro-skip:focus-visible { border-color: var(--amber); color: var(--amber); outline: none; }
+.intro-mute { left: 18px; padding: 8px 12px; font-size: 1.1rem; }
+.intro-tap {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  font: 700 1.05rem var(--font-body); color: var(--ink); background: var(--amber); border: 0; border-radius: 999px;
+  padding: 12px 22px; cursor: pointer; box-shadow: 0 6px 0 var(--amber-deep);
+}
+@media (max-width: 600px) {
+  .intro { padding: 12px 0 84px; gap: 12px; }
+  .intro-stage { border-radius: 0; width: 100%; }
+  .intro-sub { padding: 0 16px; }
+}
