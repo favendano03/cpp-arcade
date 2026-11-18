@@ -17,6 +17,10 @@
   const ptrs = k => shuffle(PTRS).slice(0, k);
   function distinct(k, lo, hi) { const s = new Set(); while (s.size < k) s.add(rnd(lo, hi)); return [...s]; }
   const addr = () => rnd(250, 2400) * 4;                      // direcciones ilustrativas, como 1776 en el PPT
+  // k direcciones ilustrativas distintas (para comparar punteros sin suponer que una dirección es 0 o 1).
+  const addrs = k => distinct(k, 250, 2400).map(n => n * 4);
+  // Recordatorio para las comparaciones: cout muestra el resultado (bool), no la dirección.
+  const BOOL = "Una comparación da verdadero o falso, y cout lo muestra como 1 o 0, no como una dirección";
   const letters = k => shuffle("abcdefghjkmnpqrstuvwz".split("")).slice(0, k);
   const nextChar = ch => String.fromCharCode(ch.charCodeAt(0) + 1);
   // Arreglo con valores distintos y fáciles de seguir.
@@ -89,19 +93,19 @@
         k, [w, v], `Al final \`${p}\` apunta a \`${b}\`, así que \`*${p} = ${k}\` deja \`${b}\` en ${k}.`);
     },
     function () {
-      const [a] = ints(1), [p] = ptrs(1), v = rnd(2, 40);
-      return R(`¿Qué imprime \`cout << (${p} == &${a});\`?`, `int ${a} = ${v};\nint* ${p} = &${a};`,
-        1, [0, v], `\`${p}\` guarda justamente \`&${a}\`: la comparación es verdadera y cout muestra 1. Como en el PPT: ted == &andy.`);
+      const [a] = ints(1), [p] = ptrs(1), v = rnd(2, 40), A = addr();
+      return R(`¿Qué imprime \`cout << (${p} == &${a});\`?`, `int ${a} = ${v};       // ${a} está en la dirección ${A}\nint* ${p} = &${a};     // ${p} guarda ${A}`,
+        1, [0, A], `\`${p}\` guarda ${A} y \`&${a}\` también es ${A}: la comparación es verdadera. ${BOOL}. Como en el PPT: ted == &andy.`);
     },
     function () {
-      const [a] = ints(1), [p] = ptrs(1), v = rnd(2, 40);
-      return R(`¿Qué imprime \`cout << (*${p} == ${a});\`?`, `int ${a} = ${v};\nint* ${p} = &${a};`,
-        1, [0, v], `\`*${p}\` es el valor de \`${a}\`: son iguales, cout muestra 1. Como en el PPT: *ted == andy.`);
+      const [a] = ints(1), [p] = ptrs(1), v = rnd(2, 40), A = addr();
+      return R(`¿Qué imprime \`cout << (*${p} == ${a});\`?`, `int ${a} = ${v};       // ${a} está en la dirección ${A}\nint* ${p} = &${a};     // ${p} guarda ${A}`,
+        1, [0, v], `\`*${p}\` va a la dirección ${A} y lee ${v}, el valor de \`${a}\`: son iguales. ${BOOL}. Como en el PPT: *ted == andy.`);
     },
     function () {
-      const [a, b] = ints(2), [p] = ptrs(1), v = rnd(2, 40);
-      return R(`¿Qué imprime \`cout << (${p} == &${b});\`?`, `int ${a} = ${v}, ${b} = ${v};\nint* ${p} = &${a};`,
-        0, [1, v], `\`${a}\` y \`${b}\` valen lo mismo, pero son objetos distintos con direcciones distintas. \`${p}\` guarda la de \`${a}\`: 0.`);
+      const [a, b] = ints(2), [p] = ptrs(1), v = rnd(2, 40), [A, B] = addrs(2);
+      return R(`¿Qué imprime \`cout << (${p} == &${b});\`?`, `int ${a} = ${v};       // ${a} está en la dirección ${A}\nint ${b} = ${v};       // ${b} está en la dirección ${B}\nint* ${p} = &${a};     // ${p} guarda ${A}`,
+        0, [1, B], `\`${a}\` y \`${b}\` valen lo mismo, pero son objetos distintos: \`${p}\` guarda ${A} y \`&${b}\` es ${B}. La comparación es falsa. ${BOOL}.`);
     },
     function () {
       const [a, b] = ints(2), [p] = ptrs(1), v = rnd(2, 30), w = rnd(31, 60);
@@ -233,14 +237,14 @@
         y, [k, x, 0], `Al final \`${p}\` apunta a ${b}, que nunca cambió: ${y}. El ${k} quedó en ${a}.`);
     },
     function () {
-      const [a, b] = ints(2), [x, y] = distinct(2, 2, 60);
-      return S("¿Qué imprime?", `int ${a} = ${x}, ${b} = ${y};\nint* p1 = &${a};\nint* p2 = &${b};\np1 = p2;\ncout << (p1 == p2);`,
-        1, [0, x, y], "`p1 = p2` copia la dirección: ambos guardan la de " + b + ". Comparar punteros compara direcciones: 1 (verdadero).");
+      const [a, b] = ints(2), [x, y] = distinct(2, 2, 60), [A, B] = addrs(2);
+      return S("¿Qué imprime?", `int ${a} = ${x};       // ${a} está en la dirección ${A}\nint ${b} = ${y};       // ${b} está en la dirección ${B}\nint* p1 = &${a};\nint* p2 = &${b};\np1 = p2;\ncout << (p1 == p2);`,
+        1, [0, B, y], `\`p1 = p2\` copia la dirección: ambos guardan ${B}, la de ${b}. Comparar punteros compara direcciones y son iguales. ${BOOL}.`);
     },
     function () {
-      const [a, b] = ints(2), v = rnd(2, 60);
-      return S("¿Qué imprime?", `int ${a} = ${v}, ${b} = ${v};\nint* p1 = &${a};\nint* p2 = &${b};\ncout << (p1 == p2) << " " << (*p1 == *p2);`,
-        "0 1", ["1 1", "0 0", "1 0"], `Las direcciones son distintas (dos objetos), pero los valores apuntados son iguales (${v}). \`p1 == p2\` compara direcciones; \`*p1 == *p2\`, valores.`);
+      const [a, b] = ints(2), v = rnd(2, 60), [A, B] = addrs(2);
+      return S("¿Qué imprime?", `int ${a} = ${v};       // ${a} está en la dirección ${A}\nint ${b} = ${v};       // ${b} está en la dirección ${B}\nint* p1 = &${a};\nint* p2 = &${b};\ncout << (p1 == p2) << " " << (*p1 == *p2);`,
+        "0 1", ["1 1", "0 0", `${A} ${v}`], `\`p1 == p2\` compara direcciones: ${A} y ${B} son distintas → 0. \`*p1 == *p2\` compara valores: ${v} y ${v} → 1. ${BOOL}.`);
     },
     function () {
       const [a, b, c] = ints(3), [x, y] = distinct(2, 2, 20), [p] = ptrs(1);
@@ -396,9 +400,9 @@
         w, [v[0], 0], `p apunta al mismo bloque: \`p[0]\` es numbers[0]. Cambia a ${w}.`);
     },
     function () {
-      const k = rnd(1, 4);
-      return R("¿Qué imprime?", `int numbers[5] = {};\ncout << (numbers + ${k} == &numbers[${k}]);`,
-        1, [0, k], `\`numbers + ${k}\` es la dirección del elemento ${k}, igual que \`&numbers[${k}]\`: 1 (verdadero).`);
+      const k = rnd(1, 4), A = addr();
+      return R("¿Qué imprime?", `int numbers[5] = {};     // numbers está en la dirección ${A}\ncout << (numbers + ${k} == &numbers[${k}]);`,
+        1, [0, A + 4 * k], `Con int de 4 bytes, \`numbers + ${k}\` y \`&numbers[${k}]\` son ambas ${A} + ${4 * k} = ${A + 4 * k}: la comparación es verdadera. ${BOOL}.`);
     },
     function () {
       const w = pick(["hello", "world", "bonos", "flujo", "renta"]), k = rnd(0, 4);
@@ -741,9 +745,9 @@
         "int***", ["int**", "int*"], "Un asterisco más por cada nivel de puntero: la dirección de un int** es un int***.");
     },
     function () {
-      const [z, q] = letters(2);
-      return R("¿Qué imprime?", `char a = '${z}';\nchar* b = &a;\nchar** c = &b;\nchar other = '${q}';\n*c = &other;\ncout << (b == &other);`,
-        1, [0, q], "`*c` es b: asignarle `&other` hace que b guarde la dirección de other. La comparación da 1.");
+      const [z, q] = letters(2), [A, O] = addrs(2);
+      return R("¿Qué imprime?", `char a = '${z}';       // a está en la dirección ${A}\nchar* b = &a;\nchar** c = &b;\nchar other = '${q}';   // other está en la dirección ${O}\n*c = &other;\ncout << (b == &other);`,
+        1, [0, O], `\`*c\` es b: asignarle \`&other\` hace que b pase de ${A} a ${O}, la dirección de other. Como \`&other\` también es ${O}, la comparación es verdadera. ${BOOL}.`);
     },
     function () {
       const [z, q] = letters(2);
@@ -774,9 +778,9 @@
         "No compila", [v, "Compila"], "c necesita la dirección de un int* (`&b`). b es int*, no int**: los tipos no calzan.");
     },
     function () {
-      const [z] = letters(1);
-      return R("¿Qué imprime?", `char a = '${z}';\nchar* b = &a;\nchar** c = &b;\ncout << (*c == &a);`,
-        1, [0, z], "`*c` es el valor de b, que es la dirección de a: la comparación es verdadera (1).");
+      const [z] = letters(1), [A, B] = addrs(2);
+      return R("¿Qué imprime?", `char a = '${z}';      // a está en la dirección ${A}\nchar* b = &a;       // b está en ${B} y guarda ${A}\nchar** c = &b;      // c guarda ${B}\ncout << (*c == &a);`,
+        1, [0, A], `\`*c\` es el valor de b, ${A}, y \`&a\` también es ${A}: la comparación es verdadera. ${BOOL}.`);
     }
   ];
 
@@ -826,9 +830,9 @@
         1, [0, "No compila", "Basura"], "0 también es una constante de puntero nulo: old_style es nulo y la comparación da 1.");
     },
     function () {
-      const [x] = ints(1), v = rnd(2, 99);
-      return S("¿Qué imprime?", `int ${x} = ${v};\nvoid* r = &${x};\ncout << (r == nullptr);`,
-        0, [1, v, "No compila"], `r es genérico (void*), pero no es nulo: guarda la dirección de ${x}. "void" y "nulo" son cosas distintas.`);
+      const [x] = ints(1), v = rnd(2, 99), A = addr();
+      return S("¿Qué imprime?", `int ${x} = ${v};       // ${x} está en la dirección ${A}\nvoid* r = &${x};\ncout << (r == nullptr);`,
+        0, [1, A, "No compila"], `r es genérico (void*), pero no es nulo: guarda ${A}, la dirección de ${x}. "void" y "nulo" son cosas distintas. ${BOOL}.`);
     },
     function () {
       return S("¿Cómo es `q`?", "void* q = nullptr;",
