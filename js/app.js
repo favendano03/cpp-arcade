@@ -260,7 +260,7 @@
   function isDone(id) { const st = profile.levels[id]; return !!(st && st.done); }
   // Los niveles normales siempre están abiertos (para estudiar el tema que quieras).
   // Cada jefe se abre al completar los niveles de su mundo; el final, además, pide vencer a los otros 3 jefes.
-  // La campaña tiene secciones (Estructuras y Funciones, Gestión de memoria); los jefes se cuentan dentro de cada una.
+  // La campaña tiene secciones (Estructuras y Funciones, Gestión de memoria, POO); los jefes se cuentan dentro de cada una.
   const secOf = l => l.section || "estructuras";
   const sectionBosses = l => LEVELS.filter(x => x.boss && !x.final && !x.extra && secOf(x) === secOf(l));
   function isUnlocked(l) {
@@ -277,7 +277,7 @@
   // El mapa tiene tres vistas: modo de juego → sección de la campaña → niveles.
   let hubView = "modes";
   const VIEW_PARENT = { campaign: "modes", levels: "campaign" };
-  const SECTION_NAME = { estructuras: "Estructuras y Funciones", memoria: "Gestión de memoria" };
+  const SECTION_NAME = { estructuras: "Estructuras y Funciones", memoria: "Gestión de memoria", poo: "Programación orientada a objetos" };
   let hubSection = "estructuras";
   const VIEW_CRUMB = { campaign: "Campaña", levels: "Campaña · Estructuras y Funciones" };
   function setHubView(v) { hubView = v; renderHub(); }
@@ -295,6 +295,7 @@
   $("mode-campaign").addEventListener("click", () => { setHubView("campaign"); if (window.Intro) Intro.play(); });
   $("sec-estructuras").addEventListener("click", () => { hubSection = "estructuras"; setHubView("levels"); });
   $("sec-memoria").addEventListener("click", () => { hubSection = "memoria"; setHubView("levels"); });
+  $("sec-poo").addEventListener("click", () => { hubSection = "poo"; setHubView("levels"); });
   $("mode-arcade").addEventListener("click", () => { show("arcade"); window.Arcade.open(profile, renderHub); });
 
   function renderHub() {
@@ -308,7 +309,7 @@
     $("mode-campaign-meta").textContent = `${campDone}/${camp.length} niveles completados`;
     $("mode-campaign-bar").style.width = (camp.length ? campDone / camp.length * 100 : 0) + "%";
     $("mode-campaign-art").innerHTML = dotsHTML(camp);
-    ["estructuras", "memoria"].forEach(sec => {
+    ["estructuras", "memoria", "poo"].forEach(sec => {
       const lv = camp.filter(l => secOf(l) === sec), done = lv.filter(l => isDone(l.id)).length;
       const blocks = new Set(lv.filter(l => !l.tutorial).map(l => l.world)).size;
       $(`sec-${sec}-meta`).textContent = `${done}/${lv.length} completados · ${blocks} bloques y jefe final`;

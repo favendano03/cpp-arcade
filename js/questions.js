@@ -100,50 +100,6 @@
   ];
 
   /* =====================================================================
-     NIVEL 4 · CLASES (clasificador en dos fases)
-     ===================================================================== */
-  const CLASS_FILES = [
-    { label: "class Bono {…};", code: "class Bono {\n  double F, c; int n;\npublic:\n  double precio(double r) const;\n};", ask: "¿En qué archivo va la definición de la clase?", bin: ".h",
-      explain: "La declaración de la clase (sus atributos y prototipos) va en el header `Bono.h`, para que otros archivos la puedan incluir." },
-    { label: "#ifndef BONO_H", code: "#ifndef BONO_H\n#define BONO_H\n...\n#endif", ask: "¿Dónde van los include guards?", bin: ".h",
-      explain: "Los include guards protegen al header de incluirse dos veces en la misma compilación." },
-    { label: "Bono::precio(){…}", code: "double Bono::precio(double r) const {\n  // suma de flujos descontados\n}", ask: "¿Dónde va el cuerpo del método?", bin: ".cpp",
-      explain: "La implementación (`Clase::metodo` con su cuerpo) va en `Bono.cpp`. El `::` indica a qué clase pertenece." },
-    { label: "Bono::Bono(){…}", code: "Bono::Bono(double F, double c, int n)\n  : F(F), c(c), n(n) {}", ask: "¿Dónde va la implementación del constructor?", bin: ".cpp",
-      explain: "Igual que cualquier método: la declaración en el `.h`, la implementación en el `.cpp`." },
-    { label: "int main()", code: "int main() {\n  Bono b(100, 0.05, 4);\n  cout << b.precio(0.06);\n}", ask: "¿Dónde va la función que usa la clase?", bin: "main.cpp",
-      explain: "`main` es quien usa la clase: incluye `\"Bono.h\"`, crea objetos y llama métodos. No necesita ver cómo están implementados." },
-    { label: "Bono b(100);", code: "Bono b(100, 0.05, 4);", ask: "¿Dónde se crea un objeto para usarlo?", bin: "main.cpp",
-      explain: "Crear objetos e instanciar la clase es trabajo de quien la usa (por ejemplo `main.cpp`)." },
-    { label: "double df(…);", code: "double discountFactor(double r, int t);", ask: "¿Dónde va el prototipo de una función libre?", bin: ".h",
-      explain: "Los prototipos (firma terminada en `;`) van en el header; así el compilador conoce la función antes de usarla." },
-    { label: "df(…){ return …; }", code: "double discountFactor(double r, int t) {\n  return 1.0 / pow(1 + r, t);\n}", ask: "¿Dónde va el cuerpo de esa función?", bin: ".cpp",
-      explain: "La definición va en el `.cpp`. Si la pones en el `.h` sin `inline`, al incluirlo en dos archivos el linker se queja de una definición duplicada." },
-    { label: "inline cupon()", code: "inline double cupon(double F, double c) {\n  return F * c;\n}", ask: "¿Dónde va una función `inline` corta?", bin: ".h",
-      explain: "Las funciones `inline` se ponen en el header: el compilador necesita ver el cuerpo en cada archivo que la usa." }
-  ];
-  const CLASS_ACCESS = [
-    { label: "double F;", code: "class Bono {\n  double F;   // nominal\n  ...", ask: "Atributo nominal `F`: ¿público o privado?", bin: "private",
-      explain: "Encapsulamiento: los datos internos van en `private` para que nadie los cambie sin control." },
-    { label: "double c;", code: "class Bono {\n  double c;   // tasa cupón\n  ...", ask: "Atributo tasa cupón `c`: ¿público o privado?", bin: "private",
-      explain: "Los atributos se dejan privados y se exponen, si hace falta, con getters/setters." },
-    { label: "int n;", code: "class Bono {\n  int n;      // número de pagos\n  ...", ask: "Atributo `n`: ¿público o privado?", bin: "private",
-      explain: "Si `n` fuera público, alguien podría ponerlo negativo y romper el cálculo del precio." },
-    { label: "precio()", code: "double precio(double r) const;", ask: "Método `precio`: ¿público o privado?", bin: "public",
-      explain: "Es el servicio que la clase ofrece al exterior, así que es público. Es la interfaz de la clase." },
-    { label: "Bono(F,c,n)", code: "Bono(double F, double c, int n);", ask: "Constructor: ¿público o privado?", bin: "public",
-      explain: "Si el constructor fuera privado, nadie fuera de la clase podría crear un `Bono`." },
-    { label: "getNominal()", code: "double getNominal() const;", ask: "Getter `getNominal`: ¿público o privado?", bin: "public",
-      explain: "Los getters existen justamente para leer desde fuera un atributo privado. El `const` dice que no modifica el objeto." },
-    { label: "setTasa(r)", code: "void setTasa(double c);", ask: "Setter `setTasa`: ¿público o privado?", bin: "public",
-      explain: "Un setter público permite cambiar el atributo pero validando (por ejemplo, rechazar tasas negativas)." },
-    { label: "flujo(t)", code: "// solo lo usa precio() por dentro\ndouble flujo(int t) const;", ask: "Método auxiliar que solo usa `precio()` internamente: ¿público o privado?", bin: "private",
-      explain: "Un método auxiliar interno conviene dejarlo privado: es un detalle de implementación, no parte de la interfaz." },
-    { label: "~Bono()", code: "~Bono();", ask: "Destructor: ¿público o privado?", bin: "public",
-      explain: "El destructor se llama solo al destruir el objeto (fin del ámbito o `delete`), y debe ser público para que eso pueda ocurrir." }
-  ];
-
-  /* =====================================================================
      NIVEL 2 · PUNTEROS (disparos, 4 alternativas, generadas)
      ===================================================================== */
   function addrPair() {
@@ -637,82 +593,6 @@
     { code: "char* s = new char[10];\ns = nullptr;", bin: "fuga", explain: "Poner `nullptr` no libera nada: solo pierdes la dirección. Primero `delete[] s;`, después `s = nullptr;`." }
   ];
 
-  /* =====================================================================
-     NIVEL · VIDA DE UN OBJETO (carrera, generadas)
-     ===================================================================== */
-  const T_CLASS = "struct T {\n  char id;\n  T(char c) : id(c) { cout << id; }\n  ~T() { cout << id; }\n};\n";
-  const OBJ_GENS = [
-    function () {
-      return mkQ("¿Qué imprime?", "struct T {\n  T()  { cout << \"C\"; }\n  ~T() { cout << \"D\"; }\n};\n\nint main() {\n  T a;\n  cout << \"M\";\n}",
-        "CMD", ["CDM", "MCD"],
-        "El constructor corre al crear `a` (C), después el resto de `main` (M), y el destructor al cerrar `}` (D).", 3);
-    },
-    function () {
-      return mkQ("¿Qué imprime?", T_CLASS + "\nint main() {\n  T a('1');\n  T b('2');\n}",
-        "1221", ["1212", "2112"],
-        "Se construyen en orden (1, 2) y se destruyen en orden inverso (2, 1), como una pila.", 3);
-    },
-    function () {
-      return mkQ("¿Qué imprime?", T_CLASS + "\nint main() {\n  { T a('1'); }\n  T b('2');\n}",
-        "1122", ["1221", "1212"],
-        "`a` vive solo dentro de sus llaves: se construye y se destruye ahí mismo (11). Después nace y muere `b` (22).", 3);
-    },
-    function () {
-      return mkQ("¿Qué imprime?", T_CLASS + "\nint main() {\n  T* p = new T('1');\n}   // sin delete",
-        "1", ["11", "nada"],
-        "Lo creado con `new` no se destruye solo: sin `delete` el destructor nunca corre (y hay fuga de memoria).", 3);
-    },
-    function () {
-      return mkQ("¿Qué imprime?", T_CLASS + "\nint main() {\n  T* p = new T('1');\n  delete p;\n  cout << \"M\";\n}",
-        "11M", ["1M1", "M11"],
-        "`delete p` llama al destructor en ese momento, antes del `cout`.", 3);
-    },
-    function () {
-      const ref = Math.random() < 0.5;
-      return mkQ("¿Qué imprime?", `struct Contador { int n = 0; };\n\nvoid sumar(Contador${ref ? "&" : ""} c) { c.n++; }\n\nint main() {\n  Contador k;\n  sumar(k);\n  cout << k.n;\n}`,
-        ref ? 1 : 0, [ref ? 0 : 1, "No compila"],
-        ref ? "Por referencia, `c` es el mismo objeto `k`: queda en 1." : "Los objetos también se pasan por valor (copia) si no hay `&`. Se modifica la copia y `k.n` sigue en 0.", 3);
-    },
-    function () {
-      const k = rnd(2, 4);
-      const names = ["a", "b", "c", "d"].slice(0, k).join(", ");
-      return mkQ("¿Qué imprime?", `struct Op {\n  static int total;\n  Op() { total++; }\n};\nint Op::total = 0;\n\nint main() {\n  Op ${names};\n  cout << Op::total;\n}`,
-        k, [1, 0],
-        `Un miembro \`static\` es uno solo para toda la clase. Cada constructor lo incrementa: ${k} objetos → ${k}.`, 3);
-    },
-    function () {
-      return mkQ("¿Qué pasa?", "class Bono {\n  double F;\n};\n\nBono b;\nb.F = 100;",
-        "No compila", ["F = 100", "Error al ejecutar"],
-        "En una `class` los miembros son privados por defecto. Desde afuera no se puede acceder a `F`.", 3);
-    },
-    function () {
-      return mkQ("¿Qué imprime?", "struct Bono {\n  double F;\n};\n\nBono b;\nb.F = 100;\ncout << b.F;",
-        100, ["No compila", 0],
-        "En un `struct` los miembros son públicos por defecto. Es la única diferencia real con `class`.", 3);
-    },
-    function () {
-      return mkQ("¿Qué pasa?", "class Bono {\n  double F;\npublic:\n  double precio() const {\n    F = 0;\n    return 1;\n  }\n};",
-        "No compila", ["F = 0", "Retorna 1"],
-        "Un método `const` promete no modificar el objeto. Asignar `F = 0` adentro rompe la promesa y el compilador lo rechaza.", 3);
-    },
-    function () {
-      const v = rnd(2, 9) * 10;
-      return mkQ("¿Qué imprime?", `class Bono {\n  double F;\npublic:\n  Bono() : F(100) {}\n  void setF(double F) { F = F; }\n  double getF() const { return F; }\n};\n\nBono b;\nb.setF(${v});\ncout << b.getF();`,
-        100, [v, "basura"],
-        "Dentro de `setF`, `F` se refiere al parámetro, que oculta al atributo. `F = F` no hace nada útil. Lo correcto es `this->F = F;`.", 3);
-    },
-    function () {
-      return mkQ("¿Qué imprime?", "struct T {\n  T() { cout << \"C\"; }\n};\n\nint main() {\n  T v[3];\n}",
-        "CCC", ["C", "nada"],
-        "Un arreglo de objetos llama al constructor una vez por cada elemento.", 3);
-    },
-    function () {
-      const f = pick([["Bono b;", 100], ["Bono b(50);", 50]]);
-      return mkQ("¿Cuánto vale `b.getF()`?", `class Bono {\n  double F;\npublic:\n  Bono(double F = 100) : F(F) {}\n  double getF() const { return F; }\n};\n\n${f[0]}`,
-        f[1], [f[1] === 100 ? 0 : 100, "No compila"],
-        f[1] === 100 ? "El constructor tiene argumento por defecto: sin parámetros, `F` toma 100." : "Se pasó 50, que reemplaza el valor por defecto.", 3);
-    }
-  ];
 
   /* =====================================================================
      JEFES · preguntas conceptuales cortas (estilo prueba)
@@ -809,27 +689,6 @@
       "La variable local muere al salir de la función; la dirección queda apuntando a memoria inválida."],
     ["M", "`const int* p` significa…", ["No se puede modificar *p a través de p", "p no puede cambiar de dirección", "p es nulo", "*p vale 0"], 0,
       "`const` a la izquierda del `*` protege el dato; a la derecha (`int* const p`) protege el puntero."],
-
-    ["P", "¿Qué es una clase?", ["Un molde que define datos y comportamiento", "Una variable global", "Una función recursiva", "Un archivo .h"], 0,
-      "La clase es el molde; cada objeto es una instancia concreta de ese molde."],
-    ["P", "¿Para qué sirve el constructor?", ["Inicializar el objeto al crearlo", "Destruir el objeto", "Copiar el header", "Imprimir el objeto"], 0,
-      "El constructor tiene el mismo nombre que la clase, no tiene tipo de retorno y se llama solo al crear el objeto."],
-    ["P", "¿Por qué los atributos suelen ser `private`?", ["Encapsulamiento: controlar el acceso", "Para que corra más rápido", "Porque public no compila", "Para usar menos memoria"], 0,
-      "Así solo los métodos de la clase pueden cambiarlos, validando que el objeto quede consistente."],
-    ["P", "¿Qué significa `const` al final de un método?", ["No modifica los atributos", "Retorna una constante", "No recibe parámetros", "Es estático"], 0,
-      "Un método `const` promete no cambiar el estado del objeto; se puede llamar sobre objetos constantes."],
-    ["P", "¿Cuándo se llama al destructor de un objeto local?", ["Al salir de su ámbito", "Nunca", "Al compilar", "Al crear otro objeto"], 0,
-      "Los objetos del stack se destruyen solos al terminar el bloque `{ }`; los del heap, al hacer `delete`."],
-    ["P", "En un `struct`, los miembros por defecto son…", ["public", "private", "protected", "const"], 0,
-      "Es la única diferencia con `class`, donde por defecto son `private`."],
-    ["P", "¿Qué es `this` dentro de un método?", ["Un puntero al objeto actual", "Una copia del objeto", "La clase base", "Un atributo"], 0,
-      "`this->F` distingue el atributo `F` de un parámetro con el mismo nombre."],
-    ["P", "Un miembro `static`…", ["Es compartido por todos los objetos de la clase", "Es distinto en cada objeto", "No se puede modificar", "Vive en el heap"], 0,
-      "Sirve, por ejemplo, para contar cuántos objetos se han creado."],
-    ["P", "Los objetos locales se destruyen en orden…", ["Inverso al de creación", "Igual al de creación", "Al azar", "Alfabético"], 0,
-      "Como en una pila: el último en construirse es el primero en destruirse."],
-    ["P", "¿Qué es un objeto?", ["Una instancia de una clase", "Un archivo .cpp", "Un tipo primitivo", "Una función"], 0,
-      "`Bono b(100);` crea el objeto `b`, una instancia de la clase `Bono`."]
   ];
 
   function bossQuestions(tags, n) {
@@ -2955,27 +2814,6 @@
   }
   CAMPAIGN.filter(l => l.boss).forEach(l => { l.build = () => buildBoss(l); });
 
-  // Contenido extra (otros PPT del curso): clases, fuera de la campaña. La memoria tiene su propia sección (memory.js).
-  const EXTRA = [
-    { id: "clases", world: 6, extra: true, addr: "0x0600", engine: "sorter", controls: SORT,
-      title: "Arquitecto de clases", topic: "Clases, .h y .cpp", desc: "Arma la clase Bono: qué va en el .h, en el .cpp y qué es público o privado.",
-      intro: "Primera fase: manda cada pieza al archivo donde corresponde. Segunda fase: decide qué miembros de <code>Bono</code> son públicos y cuáles privados.",
-      build() {
-        return { phases: [
-          { bins: [".h", ".cpp", "main.cpp"], items: shuffle(CLASS_FILES).slice(0, 8), title: "Fase 1 · ¿En qué archivo va?" },
-          { bins: ["private", "public"], items: shuffle(CLASS_ACCESS).slice(0, 7), title: "Fase 2 · Encapsulamiento" }
-        ] };
-      } },
-    { id: "objetos", world: 6, extra: true, addr: "0x0610", engine: "runner", controls: RUN,
-      title: "Vida de un objeto", topic: "Objetos en ejecución", desc: "Constructores, destructores, static, this y copias de objetos.",
-      intro: "Predice qué imprime cada programa con objetos: cuándo nacen, cuándo mueren y qué se copia.",
-      build() { return { questions: fromGens(OBJ_GENS, 10) }; } },
-    { id: "jefe-poo", world: 6, extra: true, boss: true, addr: "0xC1A5", engine: "shooter", controls: SHOOT,
-      title: "Jefe: Constructor Loco", topic: "Jefe extra de clases", desc: "Preguntas rápidas de clases y objetos.",
-      intro: "Un constructor que nunca deja de construir. Responde lo de clases y objetos y esquiva sus disparos.",
-      build() { return { questions: bossQuestions(["P"], 7), boss: { label: "Clase()", color: "good", pattern: "spread", speed: 1.1 } }; } }
-  ];
-
   window.Content = {
     shuffle,
     // Herramientas para las otras secciones de la campaña (memory.js).
@@ -2985,9 +2823,8 @@
       { n: 1, name: "Bloque 1 · Bases", desc: "Secciones 1 a 4 del resumen: estructura, variables, tipos y texto." },
       { n: 2, name: "Bloque 2 · Operadores y archivos", desc: "Secciones 5 a 7: operadores, entrada/salida y headers." },
       { n: 3, name: "Bloque 3 · Funciones", desc: "Secciones 8 a 11: funciones, argumentos, interfaces y recursión." },
-      { n: 4, name: "Bloque 4 · Control y arreglos", desc: "Secciones 12 y 13: flujo de control, arreglos y cadenas C." },
-      { n: 6, name: "Extra · Clases", desc: "Clases y objetos (fuera de la campaña)." }
+      { n: 4, name: "Bloque 4 · Control y arreglos", desc: "Secciones 12 y 13: flujo de control, arreglos y cadenas C." }
     ],
-    levels: CAMPAIGN.concat(EXTRA)
+    levels: CAMPAIGN
   };
 })();

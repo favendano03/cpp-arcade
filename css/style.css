@@ -375,10 +375,14 @@ summary::-webkit-details-marker { display: none; }
 
 @media (min-width: 600px) {
   .mode-pair { grid-template-columns: 1fr 1fr; }
+  /* Tres secciones: la tercera ocupa todo el ancho hasta que caben las tres en una fila */
+  .mode-pair.trio > :last-child:nth-child(odd) { grid-column: 1 / -1; }
   .mode-art { height: 150px; }
 }
 @media (min-width: 860px) {
   .mode-art { height: 190px; }
+  .mode-pair.trio { grid-template-columns: repeat(3, 1fr); }
+  .mode-pair.trio > :last-child:nth-child(odd) { grid-column: auto; }
   .mode-art.map { gap: 10px; padding: 18px 24px; }
   .dot { width: 12px; height: 12px; border-radius: 3px; }
   .dot.boss { width: 17px; height: 17px; }
