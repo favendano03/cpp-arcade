@@ -20,9 +20,10 @@ Nació como herramienta de estudio para el curso *Programación en Finanzas* (C+
 
 ## Cómo se juega
 
-- **Campaña**: dos secciones, cada una con un jefe al final de cada bloque y un jefe final.
+- **Campaña**: tres secciones, cada una con un jefe al final de cada bloque y un jefe final.
   - **Estructuras y Funciones**: un Nivel 0 guiado para quien nunca vio C++ (10 lecciones cortas, sin perder vidas) y 16 niveles en 4 bloques.
   - **Gestión de memoria**: 16 niveles en 5 bloques (punteros, arreglos y aritmética, punteros especiales, new/delete y malloc/free, y el bono).
+  - **Programación orientada a objetos**: 16 niveles en 5 bloques (estructuras, clases, uniones y herencia, polimorfismo, amistad y el bono con las clases Coupon y Bond).
 - **Arcade**: en la taberna El Heap, un trader cansado te pide ayuda con un caso (compra o venta de un bono, un forward o valorar la acción de una empresa ficticia). Resuelves en su computador preguntas de C++ aplicado: predecir la salida, completar la línea que falta o encontrar el bug. Tres dificultades (fácil, intermedio y leyenda, con reloj) y dos finales: lo ascienden o lo despiden.
 
 Hay tres mecánicas:
@@ -62,7 +63,7 @@ Cada vez que abres la campaña parte una intro animada de 79 segundos, con narra
 | | Cadenas estilo C | Carrera |
 | | **Jefe final: Segmentation Fault** | Jefe, ataques mixtos |
 
-Los niveles normales están siempre abiertos, para estudiar el tema que quieras. Cada jefe se desbloquea al completar su bloque, y el final pide además vencer a los otros tres. Hay también dos secciones extra: **Memoria** (stack o heap, punteros, fugas de memoria) y **Clases** (diseño de una clase en `.h` y `.cpp`, vida de un objeto).
+Los niveles normales están siempre abiertos, para estudiar el tema que quieras. Cada jefe se desbloquea al completar su bloque, y el final pide además vencer a los otros tres.
 
 ## Controles
 
@@ -87,6 +88,7 @@ index.html             pantallas (inicio, modos, juego, resultado, repaso)
 css/style.css          estilos
 js/questions.js        contenido de los niveles y generadores de preguntas (sección 1)
 js/memory.js           niveles de la sección 2, Gestión de memoria
+js/poo.js              niveles de la sección 3, Programación orientada a objetos
 js/arcade-cases.js     casos y preguntas del modo Arcade, por dificultad y tema
 js/arcade-scene.js     escena pixel art de la taberna: personajes, luces, cámara y partículas
 js/arcade.js           modo Arcade: guion de la escena, computador del trader y finales
