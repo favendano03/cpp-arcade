@@ -167,21 +167,21 @@
     { code: "float rate = 0.5f;\nfloat* f = &rate;\n*f = 0.75f;", bin: "ok", explain: "Puntero a float apuntando a un float: el tipo apuntado coincide." },
     { code: "int* old_style = 0;", bin: "ok", explain: "El 0 también es una constante de puntero nulo (estilo antiguo). Hoy se prefiere `nullptr`." },
     { code: "int a = 1, b = 2;\nint* p = &a;\np = &b;\n*p = 3;", bin: "ok", explain: "Un puntero puede cambiar de objeto. Al final apunta a b y lo deja en 3." },
-    { code: "int number = 0;\nint* tommy;\n*tommy = &number;", bin: "nocomp", explain: "`*tommy` tiene tipo int, pero `&number` tiene tipo int*: no se puede asignar. Es el error que muestra el PPT; lo correcto es `tommy = &number`." },
-    { code: "int* p3, value;\nint x = 4;\nvalue = &x;", bin: "nocomp", explain: "En `int* p3, value;` el `*` solo afecta a p3: value es un int y no puede guardar una dirección." },
-    { code: "int x = 5;\nint* p = x;", bin: "nocomp", explain: "Un puntero se inicializa con una dirección (`&x`), no con un valor int." },
-    { code: "int x = 5;\nchar* c = &x;", bin: "nocomp", explain: "`&x` es int* y c es char*: son tipos de puntero distintos. El tipo apuntado importa." },
-    { code: "double d = 1.5;\nint* p = &d;", bin: "nocomp", explain: "`&d` es double*; no se puede guardar en un int*." },
-    { code: "int* p1, p2;\nint x = 1;\np2 = &x;", bin: "nocomp", explain: "Solo p1 es puntero: el `*` pertenece a cada declarador. p2 es un int y no recibe direcciones." },
-    { code: "int x = 5;\nint p = &x;", bin: "nocomp", explain: "Para guardar una dirección hace falta un puntero (`int* p`). Un int no la acepta." },
-    { code: "int* p = &5;", bin: "nocomp", explain: "Solo los objetos tienen dirección. El literal 5 no es una variable, así que `&5` no compila." },
-    { code: "int x = 3;\nint* p = &x;\nint y = p;", bin: "nocomp", explain: "`p` es una dirección (int*). Para leer el entero hay que desreferenciar: `int y = *p;`." },
-    { code: "int* tommy;\n*tommy = 7;", bin: "invalido", explain: "Compila, pero tommy no tiene inicializador: su valor es indeterminado. Desreferenciarlo escribe en una dirección cualquiera." },
-    { code: "int* p = nullptr;\n*p = 5;", bin: "invalido", explain: "Compila, pero un puntero nulo no selecciona ningún objeto. Es válido compararlo, no desreferenciarlo." },
-    { code: "int* p = nullptr;\nint v = *p;", bin: "invalido", explain: "Leer `*p` con p nulo no es válido: no hay objeto al que acceder." },
-    { code: "int* p1, *p2;\nint x = 1;\np1 = &x;\n*p2 = *p1;", bin: "invalido", explain: "p2 nunca recibió una dirección. `*p2 = …` escribe en un lugar indeterminado aunque compile." },
-    { code: "int* p3, value;\n*p3 = 5;", bin: "invalido", explain: "Los tipos calzan (`*p3` es int), pero p3 no fue inicializado: no apunta a nada válido." },
-    { code: "int* p = 0;\ncout << *p;", bin: "invalido", explain: "`0` deja a p nulo. Desreferenciar un puntero nulo no es válido." }
+    { code: "int number = 0;\nint* tommy;\n*tommy = &number;", bin: "nocomp", explain: "Error de compilación: `*tommy` tiene tipo int, pero `&number` tiene tipo int*: no se puede asignar. Es el error que muestra el PPT; lo correcto es `tommy = &number`." },
+    { code: "int* p3, value;\nint x = 4;\nvalue = &x;", bin: "nocomp", explain: "Error de compilación: en `int* p3, value;` el `*` solo afecta a p3, así que value es un int y no puede guardar una dirección." },
+    { code: "int x = 5;\nint* p = x;", bin: "nocomp", explain: "Error de compilación: un puntero se inicializa con una dirección (`&x`), no con un valor int." },
+    { code: "int x = 5;\nchar* c = &x;", bin: "nocomp", explain: "Error de compilación: `&x` es int* y c es char*, son tipos de puntero distintos. El tipo apuntado importa." },
+    { code: "double d = 1.5;\nint* p = &d;", bin: "nocomp", explain: "Error de compilación: `&d` es double* y no se puede guardar en un int*." },
+    { code: "int* p1, p2;\nint x = 1;\np2 = &x;", bin: "nocomp", explain: "Error de compilación: solo p1 es puntero, porque el `*` pertenece a cada declarador. p2 es un int y no recibe direcciones." },
+    { code: "int x = 5;\nint p = &x;", bin: "nocomp", explain: "Error de compilación: para guardar una dirección hace falta un puntero (`int* p`). Un int no la acepta." },
+    { code: "int* p = &5;", bin: "nocomp", explain: "Error de compilación: solo los objetos tienen dirección. El literal 5 no es una variable, así que `&5` no compila." },
+    { code: "int x = 3;\nint* p = &x;\nint y = p;", bin: "nocomp", explain: "Error de compilación: `p` es una dirección (int*). Para leer el entero hay que desreferenciar: `int y = *p;`." },
+    { code: "int* tommy;\n*tommy = 7;", bin: "invalido", explain: "Compila, pero falla al ejecutar: tommy no tiene inicializador y su valor es indeterminado. Desreferenciarlo escribe en una dirección cualquiera." },
+    { code: "int* p = nullptr;\n*p = 5;", bin: "invalido", explain: "Compila, pero falla al ejecutar: un puntero nulo no selecciona ningún objeto. Es válido compararlo, no desreferenciarlo." },
+    { code: "int* p = nullptr;\nint v = *p;", bin: "invalido", explain: "Compila, pero falla al ejecutar: leer `*p` con p nulo no es válido, porque no hay objeto al que acceder." },
+    { code: "int* p1, *p2;\nint x = 1;\np1 = &x;\n*p2 = *p1;", bin: "invalido", explain: "Compila, pero falla al ejecutar: p2 nunca recibió una dirección, así que `*p2 = …` escribe en un lugar indeterminado." },
+    { code: "int* p3, value;\n*p3 = 5;", bin: "invalido", explain: "Compila, porque los tipos calzan (`*p3` es int), pero falla al ejecutar: p3 no fue inicializado y no apunta a nada válido." },
+    { code: "int* p = 0;\ncout << *p;", bin: "invalido", explain: "Compila, pero falla al ejecutar: `0` deja a p nulo, y desreferenciar un puntero nulo no es válido." }
   ];
 
   /* ---------- m03 · Seguir punteros (disparos) ---------- */
@@ -1515,11 +1515,12 @@
     ok: "Correcto", nocomp: "No compila", invalido: "Inválido", fuga: "Fuga",
     compila: "Compila", "no compila": "No compila", delete: "delete", "delete[]": "delete[]", free: "free"
   };
-  function sorterQuiz(items, bins, n, ask) {
+  function sorterQuiz(items, bins, n, ask, labels) {
     return freshIdx(items.key, items.length, n).map(k => {
       const it = items[k];
-      const options = bins.map(b => NAMES[b] || b);
-      const correct = NAMES[it.bin] || it.bin;
+      const name = b => (labels && labels[b]) ? labels[b].replace(/-\n/g, "").replace(/\n/g, " ").replace(/^(.)(.*)$/, (m, a, r) => r === r.toUpperCase() ? a + r.toLowerCase() : m) : (NAMES[b] || b);
+      const options = bins.map(name);
+      const correct = name(it.bin);
       return { ask: it.ask || ask, code: it.code, options, answer: options.indexOf(correct), correctText: correct, explain: it.explain };
     });
   }
@@ -1529,7 +1530,7 @@
     return {
       engine: "sorter", controls: SORT,
       build() { return { phases: [{ bins, labels, items: cases(items, Math.min(10, items.length), ask) }] }; },
-      quiz: n => sorterQuiz(items, bins, n, ask)
+      quiz: n => sorterQuiz(items, bins, n, ask, labels)
     };
   }
   const L = (o, kind) => Object.assign({ section: "memoria" }, o, kind);
@@ -1542,8 +1543,8 @@
       runner(M_ADDR_GENS)),
     L({ id: "m02-declarar", world: 11, addr: "0x1110", title: "Declarar e inicializar", topic: "§1 Declaración e inicialización",
       desc: "Un * por declarador, tipos que calzan y punteros sin dirección válida.",
-      intro: "Mándalo a <code>CORRECTO</code>, <code>NO COMPILA</code> o <code>USO INVÁLIDO</code> (compila, pero desreferencia algo que no es un objeto)." },
-      sorter(M_DECL_ITEMS, DECL_BINS, "¿Cómo está este código?", DECL_LABELS)),
+      intro: "Mándalo a <code>CORRECTO</code>, <code>NO COMPILA</code> o <code>USO INVÁLIDO</code>. <b>No compila</b>: el compilador lo rechaza, por ejemplo porque los tipos no calzan (<code>int* p = &d;</code> con d double). <b>Uso inválido</b>: compila, pero falla al ejecutar porque desreferencia un puntero nulo o sin dirección (<code>int* p = nullptr; *p = 5;</code>)." },
+      sorter(M_DECL_ITEMS, DECL_BINS, "¿Correcto, no compila o compila pero falla al ejecutar?", DECL_LABELS)),
     L({ id: "m03-seguimiento", world: 11, addr: "0x1120", title: "Seguir punteros", topic: "§1 Seguimiento de ejemplos",
       desc: "firstvalue y secondvalue: reasignar punteros, copiar enteros y alias.",
       intro: "Sigue cada línea como en la tabla del PPT y dispara a lo que queda. Fíjate si se copia un entero o una dirección." },

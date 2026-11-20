@@ -2823,10 +2823,11 @@
     compila: "Compila", "no compila": "No compila",
     ".h": "calculations.h", ".cpp": "calculations.cpp", "main.cpp": "main.cpp"
   };
-  function sorterQuiz(items, bins, n, ask) {
+  function sorterQuiz(items, bins, n, ask, labels) {
     return shuffle(items).slice(0, n).map(it => {
-      const options = bins.map(b => NAMES[b] || b);
-      const correct = NAMES[it.bin] || it.bin;
+      const name = b => (labels && labels[b]) ? labels[b].replace(/-\n/g, "").replace(/\n/g, " ").replace(/^(.)(.*)$/, (m, a, r) => r === r.toUpperCase() ? a + r.toLowerCase() : m) : (NAMES[b] || b);
+      const options = bins.map(name);
+      const correct = name(it.bin);
       return { ask: it.ask || ask, code: it.code, options, answer: options.indexOf(correct), correctText: correct, explain: it.explain };
     });
   }
@@ -2843,7 +2844,7 @@
     return {
       engine: "sorter", controls: SORT,
       build() { return { phases: [{ bins, labels, items: cases(items, Math.min(10, items.length), ask) }] }; },
-      quiz: n => sorterQuiz(items, bins, n, ask)
+      quiz: n => sorterQuiz(items, bins, n, ask, labels)
     };
   }
 

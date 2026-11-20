@@ -255,6 +255,11 @@
   const BIN_LABEL = { stack: "STACK", heap: "HEAP", ".h": "Bono.h", ".cpp": "Bono.cpp", "main.cpp": "main.cpp", private: "private:", public: "public:",
     compila: "COMPILA", "no compila": "NO COMPILA", ok: "SIN ERROR", fuga: "FUGA", colgante: "COLGANTE" };
   const HEAP_MAX = 4;
+  // Texto de una zona tal como se ve en su botón, para la retroalimentación ("NO\nCOMPILA" → "No compila").
+  function binText(b, labels) {
+    const t = ((labels && labels[b]) || BIN_LABEL[b] || b).replace(/-\n/g, "").replace(/\n/g, " ");
+    return /[A-ZÁÉÍÓÚÑ]/.test(t) && t === t.toUpperCase() ? t.charAt(0) + t.slice(1).toLowerCase() : t;
+  }
 
   class Sorter extends BaseGame {
     constructor(level, data, ui) {
@@ -353,7 +358,7 @@
         });
       } else {
         const title = it.isDelete && bin === "stack" ? "Eso no se libera así" : "Zona equivocada";
-        this.wrong(x, y, it, title);
+        this.wrong(x, y, Object.assign({ correctText: binText(it.bin, this.phase.labels) }, it), title);
       }
     }
     leak(x, y) {
